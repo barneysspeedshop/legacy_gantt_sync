@@ -1,0 +1,152 @@
+import 'package:bcrypt/bcrypt.dart';
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
+import 'package:postgres/postgres.dart';
+import '../models/auth_models.dart';
+import '../utils/logger.dart';
+
+class AuthService {
+  final Connection _connection;
+  final String _jwtSecret;
+
+  AuthService(this._connection, this._jwtSecret);
+
+  Future<void> init() async {
+    // strict checking is good practice for auth tables
+    await _connection.execute('CREATE SCHEMA IF NOT EXISTS auth');
+
+    await _connection.execute('''
+      CREATE TABLE IF NOT EXISTS auth.tenants (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    ''');
+
+    await _connection.execute('''
+      CREATE TABLE IF NOT EXISTS auth.users (
+        id TEXT PRIMARY KEY,
+        username TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        role TEXT NOT NULL,
+        tenant_id TEXT REFERENCES auth.tenants(id),
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    ''');
+
+    await _connection.execute('''
+      CREATE TABLE IF NOT EXISTS auth.refresh_tokens (
+        token_hash TEXT PRIMARY KEY,
+        user_id TEXT REFERENCES auth.users(id),
+        expires_at TIMESTAMP NOT NULL,
+        is_revoked BOOLEAN DEFAULT FALSE
+      )
+    ''');
+
+    JsonLogger.info('AUTH_DB_INIT', {'status': 'success'});
+  }
+
+  Future<Tenant> registerTenant(String name, String adminUsername, String adminPassword) async {
+    final tenantId = name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]'), '_');
+
+    // Start transaction
+    return await _connection.runTx((ctx) async {
+      await ctx.execute(Sql.named('INSERT INTO auth.tenants (id, name) VALUES (@id, @name)'), parameters: {'id': tenantId, 'name': name});
+
+      final passwordHash = BCrypt.hashpw(adminPassword, BCrypt.gensalt());
+      final userId = '$adminUsername@$tenantId'; // Simple unique ID strategy or UUID
+
+      await ctx.execute(
+        Sql.named('INSERT INTO auth.users (id, username, password_hash, role, tenant_id, is_active) VALUES (@id, @username, @hash, @role, @tenantId, true)'),
+        parameters: {'id': userId, 'username': adminUsername, 'hash': passwordHash, 'role': 'tenant_admin', 'tenantId': tenantId},
+      );
+
+      return Tenant(id: tenantId, name: name, isActive: true);
+    });
+  }
+
+  Future<User> registerUser(String tenantId, String username, String password, String role) async {
+    final passwordHash = BCrypt.hashpw(password, BCrypt.gensalt());
+    // Ensure username is unique enough or scoped?
+    // For simplicity, username is globally unique in table key, but maybe scoped to tenant logically?
+    // Database 'username' field is unique.
+
+    final userId = '$username@$tenantId'; // UUID preferred usually, but this is readable for now
+
+    await _connection.execute(
+      Sql.named('INSERT INTO auth.users (id, username, password_hash, role, tenant_id, is_active) VALUES (@id, @username, @hash, @role, @tenantId, true)'),
+      parameters: {'id': userId, 'username': username, 'hash': passwordHash, 'role': role, 'tenantId': tenantId},
+    );
+
+    return User(id: userId, username: username, role: role, tenantId: tenantId, isActive: true);
+  }
+
+  Future<Map<String, String>> login(String username, String password) async {
+    final result = await _connection.execute(
+      Sql.named('SELECT id, password_hash, role, tenant_id, is_active FROM auth.users WHERE username = @username'),
+      parameters: {'username': username},
+    );
+
+    if (result.isEmpty) {
+      throw Exception('Invalid credentials');
+    }
+
+    final row = result.first;
+    final hash = row[1] as String;
+    final isActive = row[4] as bool;
+
+    if (!isActive) {
+      throw Exception('User is deactivated');
+    }
+
+    if (!BCrypt.checkpw(password, hash)) {
+      throw Exception('Invalid credentials');
+    }
+
+    final userId = row[0] as String;
+    final role = row[2] as String;
+    final tenantId = row[3] as String;
+
+    // Check tenant active
+    final tenantResult = await _connection.execute(Sql.named('SELECT is_active FROM auth.tenants WHERE id = @id'), parameters: {'id': tenantId});
+
+    if (tenantResult.isEmpty || !(tenantResult.first[0] as bool)) {
+      throw Exception('Tenant is deactivated or invalid');
+    }
+
+    final accessToken = _generateAccessToken(userId, tenantId, role);
+    // TODO: Implement refresh token logic if needed, simplfying to just access token for first pass
+
+    return {'accessToken': accessToken};
+  }
+
+  String _generateAccessToken(String userId, String tenantId, String role) {
+    final jwt = JWT({
+      'sub': userId,
+      'tenant_id': tenantId,
+      'role': role,
+      'iat': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      'exp': DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/ 1000,
+    });
+    return jwt.sign(SecretKey(_jwtSecret));
+  }
+
+  Future<void> revokeUser(String userId) async {
+    await _connection.execute(Sql.named('UPDATE auth.users SET is_active = false WHERE id = @id'), parameters: {'id': userId});
+  }
+
+  Future<void> revokeTenant(String tenantId) async {
+    await _connection.execute(Sql.named('UPDATE auth.tenants SET is_active = false WHERE id = @id'), parameters: {'id': tenantId});
+  }
+
+  Future<bool> isUserActive(String userId) async {
+    final result = await _connection.execute(Sql.named('SELECT is_active FROM auth.users WHERE id = @id'), parameters: {'id': userId});
+    return result.isNotEmpty && (result.first[0] as bool);
+  }
+
+  Future<bool> isTenantActive(String tenantId) async {
+    final result = await _connection.execute(Sql.named('SELECT is_active FROM auth.tenants WHERE id = @id'), parameters: {'id': tenantId});
+    return result.isNotEmpty && (result.first[0] as bool);
+  }
+}
