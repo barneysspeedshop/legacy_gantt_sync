@@ -6,14 +6,21 @@ import 'package:legacy_gantt_sync/middleware/auth_middleware.dart';
 import 'package:legacy_gantt_sync/services/auth_service.dart';
 import 'package:postgres/postgres.dart';
 import 'package:postgres_crdt/postgres_crdt.dart';
+import 'package:redis/redis.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_router/shelf_router.dart';
 import 'package:shelf_web_socket/shelf_web_socket.dart';
+import 'package:uuid/uuid.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'package:legacy_gantt_sync/models/models.dart';
 import 'package:legacy_gantt_sync/utils/logger.dart';
+
+// Redis Commands (for publishing)
+Command? _redisCommand;
+// Redis PubSub (for subscribing)
+PubSub? _redisPubSub;
 
 // Maps Channel ID -> List of Clients
 final Map<String, List<WebSocketChannel>> _channels = {};
@@ -26,9 +33,10 @@ final Map<String, Future<PostgresCrdt>> _crdtFutures = {};
 class ClientInfo {
   final String userId;
   final String tenantId;
+  final String connectionId;
   String? currentChannel;
 
-  ClientInfo(this.userId, this.tenantId);
+  ClientInfo(this.userId, this.tenantId, this.connectionId);
 }
 
 final Map<WebSocketChannel, ClientInfo> _clientInfos = {};
@@ -182,6 +190,59 @@ void main(List<String> args) async {
   final authService = AuthService(authDbConnection, jwtSecret);
   await authService.init();
 
+  // 2. Init Redis Connections
+  final redisHost = Platform.environment['REDIS_HOST'] ?? 'localhost';
+  final redisPort = int.parse(Platform.environment['REDIS_PORT'] ?? '6379');
+
+  try {
+    final conn1 = RedisConnection();
+    _redisCommand = await conn1.connect(redisHost, redisPort);
+    JsonLogger.info('REDIS_PUB_CONNECTED', {'host': redisHost});
+
+    final conn2 = RedisConnection();
+    final cmd2 = await conn2.connect(redisHost, redisPort);
+    _redisPubSub = PubSub(cmd2);
+    JsonLogger.info('REDIS_SUB_CONNECTED', {'host': redisHost});
+
+    // Start listening to Redis messages
+    _redisPubSub!.getStream().listen((message) {
+      // message is usually [type, channel, payload]
+      // e.g. ['message', 'channel_name', 'json_string']
+      if (message is List && message.length >= 3 && message[0] == 'message') {
+        final channelName = message[1] as String;
+        final payload = message[2] as String;
+
+        try {
+          final decoded = jsonDecode(payload);
+          // If this is a Reset Data broadcast (which might be raw or wrapped), treat carefully.
+          // Our protocol: standard messages are maps.
+          if (decoded is Map<String, dynamic>) {
+            final originConnectionId = decoded['originConnectionId'];
+
+            // 1. Broadcast to local clients in this channel
+            final subscribers = _channels[channelName];
+            if (subscribers != null) {
+              for (final client in subscribers) {
+                final info = _clientInfos[client];
+                // 2. Filter out the sender (echo suppression)
+                if (info?.connectionId != originConnectionId) {
+                  client.sink.add(payload);
+                }
+              }
+            }
+          }
+        } catch (e) {
+          JsonLogger.error('REDIS_MSG_ERROR', {'error': e.toString(), 'payload': payload});
+        }
+      }
+    });
+  } catch (e) {
+    JsonLogger.error('REDIS_CONNECT_FAIL', {'error': e.toString()});
+    // Decide if we should exit or run in degraded mode.
+    // For sync, degraded (no redis) means no multi-instance sync.
+    // We'll log error but continue, effectively acting as single-instance.
+  }
+
   final app = Router();
 
   // --- Auth Endpoints ---
@@ -263,7 +324,8 @@ void main(List<String> args) async {
 
     final handler = webSocketHandler((webSocket, _) {
       final channel = webSocket;
-      final clientInfo = ClientInfo(userId, tenantId);
+      final connectionId = const Uuid().v4();
+      final clientInfo = ClientInfo(userId, tenantId, connectionId);
       _clientInfos[channel] = clientInfo;
 
       JsonLogger.info('CLIENT_CONNECTED', {'user_id': userId, 'tenant_id': tenantId});
@@ -296,10 +358,19 @@ void main(List<String> args) async {
                   if (requestedChannel == tenantId) {
                     if (clientInfo.currentChannel != null) {
                       _channels[clientInfo.currentChannel]?.remove(channel);
+                      // If no more local clients, unsubscribe Redis?
+                      // Optional optimization.
                     }
 
                     clientInfo.currentChannel = requestedChannel;
-                    _channels.putIfAbsent(requestedChannel, () => []).add(channel);
+                    final channelList = _channels.putIfAbsent(requestedChannel, () => []);
+                    channelList.add(channel);
+
+                    // If this is the first client, subscribe Redis
+                    if (channelList.length == 1) {
+                      _redisPubSub?.subscribe([requestedChannel]);
+                      JsonLogger.info('REDIS_SUBSCRIBE', {'channel': requestedChannel});
+                    }
 
                     JsonLogger.info('SUBSCRIBE_SUCCESS', {'user_id': userId, 'tenant_id': tenantId, 'channel': requestedChannel});
                     channel.sink.add(jsonEncode({'type': 'SUBSCRIBE_SUCCESS', 'channel': requestedChannel}));
@@ -428,20 +499,34 @@ void main(List<String> args) async {
                           await crdt.execute('DELETE FROM "${clientInfo.tenantId}".tasks');
                           JsonLogger.info('DATA_RESET', {'tenant_id': clientInfo.tenantId, 'user_id': userId});
 
-                          final tenantChannel = _channels[clientInfo.tenantId];
-                          if (tenantChannel != null) {
-                            final resetMsg = jsonEncode({
-                              'type': 'RESET_DATA',
-                              'data': {},
-                              'timestamp': DateTime.now().millisecondsSinceEpoch,
-                              'actorId': userId,
-                            });
-                            for (final client in tenantChannel) {
-                              if (client != channel) {
-                                client.sink.add(resetMsg);
+                          // Redis Publish RESET_DATA
+                          final resetMsg = {
+                            'type': 'RESET_DATA',
+                            'data': {},
+                            'timestamp': DateTime.now().millisecondsSinceEpoch,
+                            'actorId': userId,
+                            'originConnectionId': clientInfo.connectionId,
+                          };
+                          _redisCommand?.send_object(['PUBLISH', clientInfo.tenantId, jsonEncode(resetMsg)]);
+
+                          // Local broadcast handled by Redis Listener loop?
+                          // Redis listener will hear this and broadcast to local clients (including other tabs of same user).
+                          // BUT, Redis listener filters out `originConnectionId`.
+                          // So the sender (this socket) won't get it back.
+                          // Everyone else will.
+                          // Wait, does RESET_DATA need to go to sender? Sender just did the action.
+                          // Usually sender updates their UI optimistically or after ack.
+                          // The original code:
+                          /*
+                           final tenantChannel = _channels[clientInfo.tenantId];
+                           if (tenantChannel != null) {
+                              ...
+                              for (final client in tenantChannel) {
+                                if (client != channel) client.sink.add(resetMsg);
                               }
-                            }
-                          }
+                           }
+                          */
+                          // Identical logic. The sender is excluded.
                         } catch (e) {
                           JsonLogger.error('RESET_FAILED', {'error': e.toString(), 'tenant_id': clientInfo.tenantId});
                         }
@@ -566,20 +651,29 @@ void main(List<String> args) async {
                         JsonLogger.info('UNKNOWN_OPERATION', {'type': type, 'data': msg.data});
                       }
 
-                      // Broadcast to others
+                      // Broadcast to others via Redis
                       if (type != 'RESET_DATA') {
-                        final subscribers = _channels[currentChannel];
-                        if (subscribers != null) {
-                          final envelope = {
-                            'type': msg.type,
-                            'data': (msg as dynamic).data,
-                            'timestamp': (msg as dynamic).timestamp,
-                            'actorId': (msg as dynamic).actorId,
-                          };
-                          final encoded = jsonEncode(envelope);
-                          for (final client in subscribers) {
-                            if (client != channel) {
-                              client.sink.add(encoded);
+                        // We already handled RESET_DATA specifically above to include db ops.
+                        // Standard broadcast:
+                        final envelope = {
+                          'type': msg.type,
+                          'data': (msg as dynamic).data,
+                          'timestamp': (msg as dynamic).timestamp,
+                          'actorId': (msg as dynamic).actorId,
+                          'originConnectionId': clientInfo.connectionId,
+                        };
+
+                        // Check if Redis is available, otherwise fallback (or fail silent, but logs warning)
+                        if (_redisCommand != null) {
+                          _redisCommand!.send_object(['PUBLISH', currentChannel, jsonEncode(envelope)]);
+                        } else {
+                          // Fallback to local broadcast if Redis missing?
+                          // Maintain partial functionality
+                          final subscribers = _channels[currentChannel];
+                          if (subscribers != null) {
+                            final encoded = jsonEncode(envelope);
+                            for (final client in subscribers) {
+                              if (client != channel) client.sink.add(encoded);
                             }
                           }
                         }
@@ -599,7 +693,17 @@ void main(List<String> args) async {
           JsonLogger.error('STREAM_ERROR', {'error': e.toString()});
         } finally {
           final currentChannel = clientInfo.currentChannel;
-          if (currentChannel != null) _channels[currentChannel]?.remove(channel);
+          if (currentChannel != null) {
+            final list = _channels[currentChannel];
+            if (list != null) {
+              list.remove(channel);
+              if (list.isEmpty) {
+                _redisPubSub?.unsubscribe([currentChannel]);
+                JsonLogger.info('REDIS_UNSUBSCRIBE', {'channel': currentChannel});
+                _channels.remove(currentChannel);
+              }
+            }
+          }
           _clientInfos.remove(channel);
           JsonLogger.info('CLIENT_DISCONNECTED', {'user_id': userId, 'tenant_id': tenantId});
         }
