@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:bcrypt/bcrypt.dart';
 import 'package:http/http.dart' as http;
+import 'package:postgres/postgres.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -10,6 +12,11 @@ void main() {
   late int port;
   late String host;
   final secret = 'test_secret_key';
+
+  // Superuser credentials
+  final superUserUsername = 'auto_superuser@admin.com';
+  final superUserPassword = 'superpassword';
+  late String superUserId;
 
   setUpAll(() async {
     final portCompleter = Completer<int>();
@@ -50,6 +57,30 @@ void main() {
     port = await portCompleter.future.timeout(const Duration(seconds: 10));
     host = 'http://localhost:$port';
     print('Auth Test Server started on port $port');
+
+    // Create Superuser explicitly via DB
+    final connection = await Connection.open(
+      Endpoint(host: 'localhost', database: 'legacy_gantt', username: 'dart_user', password: 'dart_password', port: 5432),
+      settings: const ConnectionSettings(sslMode: SslMode.disable),
+    );
+
+    try {
+      superUserId = 'auth_test_superuser';
+      final passwordHash = BCrypt.hashpw(superUserPassword, BCrypt.gensalt());
+
+      // Create system tenant
+      await connection.execute("INSERT INTO auth.tenants (id, name, is_active) VALUES ('system', 'System', true) ON CONFLICT (id) DO NOTHING");
+
+      // Upsert superuser
+      await connection.execute(
+        Sql.named(
+          'INSERT INTO auth.users (id, username, password_hash, role, tenant_id, is_active) VALUES (@id, @username, @hash, @role, @tenantId, true) ON CONFLICT (id) DO UPDATE SET password_hash = @hash, tenant_id = @tenantId',
+        ),
+        parameters: {'id': superUserId, 'username': superUserUsername, 'hash': passwordHash, 'role': 'superuser', 'tenantId': 'system'},
+      );
+    } finally {
+      await connection.close();
+    }
   });
 
   tearDownAll(() {
@@ -65,13 +96,20 @@ void main() {
     final adminUsername = 'admin_$timestamp';
     final userUsername = 'user1_$timestamp';
 
-    test('Register Tenant', () async {
+    test('Register Tenant (via Superuser)', () async {
+      // 1. Superuser login
+      final loginRes = await http.post(Uri.parse('$host/auth/login'), body: jsonEncode({'username': superUserUsername, 'password': superUserPassword}));
+      expect(loginRes.statusCode, 200, reason: 'Superuser login failed');
+      final superToken = jsonDecode(loginRes.body)['accessToken'];
+
+      // 2. Create Tenant
       final response = await http.post(
-        Uri.parse('$host/auth/register'),
+        Uri.parse('$host/api/admin/tenants'),
+        headers: {'Authorization': 'Bearer $superToken'},
         body: jsonEncode({'tenantName': tenantName, 'adminUsername': adminUsername, 'adminPassword': 'password'}),
       );
 
-      expect(response.statusCode, 200);
+      expect(response.statusCode, 200, reason: 'Tenant creation failed: ${response.body}');
       final body = jsonDecode(response.body);
       tenantId = body['tenantId'];
       expect(tenantId, isNotNull);
@@ -80,7 +118,7 @@ void main() {
     test('Login Tenant Admin', () async {
       final response = await http.post(Uri.parse('$host/auth/login'), body: jsonEncode({'username': adminUsername, 'password': 'password'}));
 
-      expect(response.statusCode, 200);
+      expect(response.statusCode, 200, reason: 'Admin login failed');
       final body = jsonDecode(response.body);
       adminToken = body['accessToken'];
       expect(adminToken, isNotNull);
@@ -93,7 +131,7 @@ void main() {
         body: jsonEncode({'username': userUsername, 'password': 'userpass'}),
       );
 
-      expect(response.statusCode, 200);
+      expect(response.statusCode, 200, reason: 'User creation failed: ${response.body}');
 
       final body = jsonDecode(response.body);
       userId = body['userId'];

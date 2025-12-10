@@ -149,4 +149,57 @@ class AuthService {
     final result = await _connection.execute(Sql.named('SELECT is_active FROM auth.tenants WHERE id = @id'), parameters: {'id': tenantId});
     return result.isNotEmpty && (result.first[0] as bool);
   }
+
+  Future<List<Tenant>> getAllTenants() async {
+    final result = await _connection.execute('SELECT id, name, is_active FROM auth.tenants');
+    return result.map((row) => Tenant(id: row[0] as String, name: row[1] as String, isActive: row[2] as bool)).toList();
+  }
+
+  Future<List<User>> getUsersByTenant(String tenantId) async {
+    final result = await _connection.execute(
+      Sql.named('SELECT id, username, role, tenant_id, is_active FROM auth.users WHERE tenant_id = @tenantId'),
+      parameters: {'tenantId': tenantId},
+    );
+    return result
+        .map((row) => User(id: row[0] as String, username: row[1] as String, role: row[2] as String, tenantId: row[3] as String, isActive: row[4] as bool))
+        .toList();
+  }
+
+  Future<Tenant?> getTenant(String tenantId) async {
+    final result = await _connection.execute(Sql.named('SELECT id, name, is_active FROM auth.tenants WHERE id = @id'), parameters: {'id': tenantId});
+    if (result.isEmpty) return null;
+    final row = result.first;
+    return Tenant(id: row[0] as String, name: row[1] as String, isActive: row[2] as bool);
+  }
+
+  Future<User?> getUser(String userId) async {
+    final result = await _connection.execute(
+      Sql.named('SELECT id, username, role, tenant_id, is_active FROM auth.users WHERE id = @id'),
+      parameters: {'id': userId},
+    );
+    if (result.isEmpty) return null;
+    final row = result.first;
+    return User(id: row[0] as String, username: row[1] as String, role: row[2] as String, tenantId: row[3] as String, isActive: row[4] as bool);
+  }
+
+  Future<void> ensureSuperuser(String username, String password) async {
+    final tenantId = 'system';
+    // Ensure system tenant exists
+    await _connection.execute(
+      "INSERT INTO auth.tenants (id, name, is_active) VALUES (@id, 'System', true) ON CONFLICT (id) DO NOTHING",
+      parameters: {'id': tenantId},
+    );
+
+    final passwordHash = BCrypt.hashpw(password, BCrypt.gensalt());
+    final userId = '$username@$tenantId';
+
+    // Upsert superuser
+    await _connection.execute(
+      Sql.named(
+        'INSERT INTO auth.users (id, username, password_hash, role, tenant_id, is_active) VALUES (@id, @username, @hash, @role, @tenantId, true) ON CONFLICT (id) DO UPDATE SET password_hash = @hash, tenant_id = @tenantId',
+      ),
+      parameters: {'id': userId, 'username': username, 'hash': passwordHash, 'role': 'superuser', 'tenantId': tenantId},
+    );
+    JsonLogger.info('SUPERUSER_SEEDED', {'username': username});
+  }
 }

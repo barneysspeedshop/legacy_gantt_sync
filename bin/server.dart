@@ -175,7 +175,6 @@ void main(List<String> args) async {
   final port = int.parse(Platform.environment['LEGACY_GANTT_SYNC_PORT'] ?? '8080');
   final jwtSecret = Platform.environment['JWT_SECRET'] ?? 'default_secret'; // WARN: Use strong secret in prod
 
-  // 1. Init Auth DB Connection
   final authDbConnection = await Connection.open(
     Endpoint(
       host: Platform.environment['DB_HOST'] ?? 'localhost',
@@ -190,7 +189,6 @@ void main(List<String> args) async {
   final authService = AuthService(authDbConnection, jwtSecret);
   await authService.init();
 
-  // 2. Init Redis Connections
   final redisHost = Platform.environment['REDIS_HOST'] ?? 'localhost';
   final redisPort = int.parse(Platform.environment['REDIS_PORT'] ?? '6379');
 
@@ -204,27 +202,20 @@ void main(List<String> args) async {
     _redisPubSub = PubSub(cmd2);
     JsonLogger.info('REDIS_SUB_CONNECTED', {'host': redisHost});
 
-    // Start listening to Redis messages
     _redisPubSub!.getStream().listen((message) {
-      // message is usually [type, channel, payload]
-      // e.g. ['message', 'channel_name', 'json_string']
       if (message is List && message.length >= 3 && message[0] == 'message') {
         final channelName = message[1] as String;
         final payload = message[2] as String;
 
         try {
           final decoded = jsonDecode(payload);
-          // If this is a Reset Data broadcast (which might be raw or wrapped), treat carefully.
-          // Our protocol: standard messages are maps.
           if (decoded is Map<String, dynamic>) {
             final originConnectionId = decoded['originConnectionId'];
 
-            // 1. Broadcast to local clients in this channel
             final subscribers = _channels[channelName];
             if (subscribers != null) {
               for (final client in subscribers) {
                 final info = _clientInfos[client];
-                // 2. Filter out the sender (echo suppression)
                 if (info?.connectionId != originConnectionId) {
                   client.sink.add(payload);
                 }
@@ -238,15 +229,31 @@ void main(List<String> args) async {
     });
   } catch (e) {
     JsonLogger.error('REDIS_CONNECT_FAIL', {'error': e.toString()});
-    // Decide if we should exit or run in degraded mode.
-    // For sync, degraded (no redis) means no multi-instance sync.
-    // We'll log error but continue, effectively acting as single-instance.
+  }
+
+  // --- Seeding ---
+  final superUserUser = Platform.environment['SUPERUSER_USERNAME'];
+  final superUserPass = Platform.environment['SUPERUSER_PASSWORD'];
+  if (superUserUser != null && superUserPass != null) {
+    // Don't await strictly to not block startup if DB is slow? Or should we?
+    // Better to await to ensure admin is ready before requests come in.
+    try {
+      await authService.ensureSuperuser(superUserUser, superUserPass);
+    } catch (e) {
+      JsonLogger.error('SEED_SUPERUSER_FAIL', {'error': e.toString()});
+    }
   }
 
   final app = Router();
 
-  // --- Auth Endpoints ---
-  app.post('/auth/register', (Request request) async {
+  // --- Admin Endpoints (RBAC) ---
+  final apiRouter = Router();
+
+  // Create Tenant (Superuser Only)
+  apiRouter.post('/admin/tenants', (Request request) async {
+    final role = request.context['auth.role'] as String;
+    if (role != 'superuser') return Response.forbidden('Requires superuser role');
+
     try {
       final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
       final tenant = await authService.registerTenant(body['tenantName'], body['adminUsername'], body['adminPassword']);
@@ -268,38 +275,87 @@ void main(List<String> args) async {
     }
   });
 
-  // --- Admin Endpoints (RBAC) ---
-  final apiRouter = Router();
-
-  // Add User (Tenant Admin)
+  // Add User (Tenant Admin or Superuser)
   apiRouter.post('/users', (Request request) async {
     final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
-    final creatorTenantId = request.context['auth.tenantId'] as String;
+    final creatorTenantId = request.context['auth.tenantId'] as String?;
+    final creatorRole = request.context['auth.role'] as String;
 
-    // Security check: cannot create users for other tenants
-    // Ideally user creation endpoint shouldn't take tenantId, it infers from creator.
-    // But if we want superusers to create users anywhere, we need to check.
-    // For now, simplify: create user in YOUR tenant.
+    String targetTenantId;
+    if (body.containsKey('tenantId')) {
+      if (creatorRole != 'superuser') {
+        return Response.forbidden('Only superusers can create users for other tenants');
+      }
+      targetTenantId = body['tenantId'];
+    } else {
+      if (creatorTenantId == null) {
+        return Response.forbidden('Tenant ID required');
+      }
+      targetTenantId = creatorTenantId;
+    }
+
+    String role = body['role'] ?? 'user';
+    if (role == 'superuser' && creatorRole != 'superuser') {
+      return Response.forbidden('Only superusers can create superuser accounts');
+    }
 
     try {
-      final user = await authService.registerUser(
-        creatorTenantId,
-        body['username'],
-        body['password'],
-        'user', // Default role
-      );
+      final user = await authService.registerUser(targetTenantId, body['username'], body['password'], role);
       return Response.ok(jsonEncode({'userId': user.id, 'message': 'User created'}));
     } catch (e) {
       return Response.internalServerError(body: jsonEncode({'error': e.toString()}));
     }
   });
 
-  // Revoke User (Tenant Admin)
+  // Revoke User (Tenant Admin or Superuser)
   apiRouter.delete('/users/<userId>', (Request request, String userId) async {
-    // TODO: Check if user belongs to tenant of the admin
+    final creatorTenantId = request.context['auth.tenantId'] as String?;
+    final creatorRole = request.context['auth.role'] as String;
+
     try {
+      if (creatorRole != 'superuser') {
+        // Enforce tenant isolation
+        final targetUser = await authService.getUser(userId);
+        if (targetUser == null) {
+          return Response.notFound('User not found');
+        }
+        if (targetUser.tenantId != creatorTenantId) {
+          return Response.forbidden('Cannot manage users of another tenant');
+        }
+      }
+
       await authService.revokeUser(userId);
       return Response.ok('User revoked');
+    } catch (e) {
+      return Response.internalServerError(body: e.toString());
+    }
+  });
+
+  // --- Superuser Endpoints ---
+
+  // List All Tenants
+  apiRouter.get('/admin/tenants', (Request request) async {
+    final role = request.context['auth.role'] as String;
+    if (role != 'superuser') return Response.forbidden('Requires superuser role');
+
+    try {
+      final tenants = await authService.getAllTenants();
+      return Response.ok(jsonEncode(tenants.map((t) => {'id': t.id, 'name': t.name, 'isActive': t.isActive}).toList()));
+    } catch (e) {
+      return Response.internalServerError(body: e.toString());
+    }
+  });
+
+  // List Users for Tenant
+  apiRouter.get('/admin/tenants/<tenantId>/users', (Request request, String tenantId) async {
+    final role = request.context['auth.role'] as String;
+    if (role != 'superuser') return Response.forbidden('Requires superuser role');
+
+    try {
+      final users = await authService.getUsersByTenant(tenantId);
+      return Response.ok(
+        jsonEncode(users.map((u) => {'id': u.id, 'username': u.username, 'role': u.role, 'tenantId': u.tenantId, 'isActive': u.isActive}).toList()),
+      );
     } catch (e) {
       return Response.internalServerError(body: e.toString());
     }
