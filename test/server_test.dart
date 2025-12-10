@@ -18,22 +18,59 @@ void main() {
 
   // Helper to register and get token
   Future<String> registerAndLogin(String username, {String? tenantId}) async {
-    // 1. Register Tenant (if tenantId not provided or we want new one)
-    // Actually, we register tenant + admin.
+    // 1. Login as Superuser (seeded by server env vars)
+    final superRes = await http.post(
+      Uri.parse('$httpUrl/auth/login'),
+      body: jsonEncode({'username': 'superuser', 'password': 'superuser'}),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (superRes.statusCode != 200) throw Exception('Superuser login failed: ${superRes.body}');
+    final superToken = jsonDecode(superRes.body)['accessToken'];
+
+    // 2. Register Tenant
+    // We treat the passed `tenantId` as the desired Tenant Name (which usually becomes the ID).
     final tName = tenantId ?? 'tenant_${random.nextInt(100000)}';
 
-    // Register Tenant (and Admin)
-    final regRes = await http.post(
-      Uri.parse('$httpUrl/auth/register'),
-      body: jsonEncode({'tenantName': tName, 'adminUsername': username, 'adminPassword': 'password'}),
+    // Check if it exists? The API might return existing or error.
+    // Ideally we just try to create.
+    final createTenantRes = await http.post(
+      Uri.parse('$httpUrl/api/admin/tenants'),
+      headers: {'Authorization': 'Bearer $superToken', 'Content-Type': 'application/json'},
+      body: jsonEncode({'tenantName': tName, 'adminUsername': 'temp_admin_${random.nextInt(10000)}', 'adminPassword': 'password'}),
     );
 
-    if (regRes.statusCode != 200) {
-      throw Exception('Failed to register: ${regRes.body}');
+    // If it fails, maybe it exists? If 200, we get ID.
+    // If we want to support "logging in to existing", we might need to handle 4xx.
+    // But for tests creating fresh tenants, 200 is expected.
+    if (createTenantRes.statusCode != 200) {
+      // Fallback: If creation failed, maybe it's just a duplicate?
+      // But the previous implementation threw exception.
+      throw Exception('Create tenant failed: ${createTenantRes.body}');
+    }
+    String effectiveTenantId = jsonDecode(createTenantRes.body)['tenantId'];
+
+    // 3. Create User in Tenant
+    // Check if we are creating the initial admin or a regular user?
+    // The test calls this with just a username.
+    // If we just created the tenant, we created an admin.
+    // But to be consistent with "registerAndLogin(username)", let's create a NEW user with that username.
+    final createUserRes = await http.post(
+      Uri.parse('$httpUrl/api/users'),
+      headers: {'Authorization': 'Bearer $superToken', 'Content-Type': 'application/json'},
+      body: jsonEncode({'username': username, 'password': 'password', 'tenantId': effectiveTenantId}),
+    );
+    if (createUserRes.statusCode != 200) {
+      // If user already exists (e.g. we passed the admin username?), just proceed to login
+      // But tests usually pass unique usernames.
+      throw Exception('Create user failed: ${createUserRes.body}');
     }
 
-    // 2. Login
-    final loginRes = await http.post(Uri.parse('$httpUrl/auth/login'), body: jsonEncode({'username': username, 'password': 'password'}));
+    // 4. Login as User
+    final loginRes = await http.post(
+      Uri.parse('$httpUrl/auth/login'),
+      body: jsonEncode({'username': username, 'password': 'password'}),
+      headers: {'Content-Type': 'application/json'},
+    );
 
     if (loginRes.statusCode != 200) {
       throw Exception('Login failed: ${loginRes.body}');
@@ -42,17 +79,65 @@ void main() {
     return jsonDecode(loginRes.body)['accessToken'];
   }
 
-  // Helper to add user to existing tenant (via admin token)
+  // Helper to add user to existing tenant (via admin token OR superuser)
+  // The original test passed an ADMIN token.
+  // Now only superuser can create users for ANY tenant, OR admin for OWN tenant.
+  // If `adminToken` is a tenant admin, it works for that tenant.
   Future<String> registerUserInTenant(String adminToken, String username) async {
+    // We need to know tenantId to create user via API if we are using superuser token,
+    // OR if we are using tenant admin token, context implies it.
+    // The endpoint `POST /api/users` requires `tenantId` in body if superuser,
+    // or infers it from token if tenant_admin?
+    // Let's check `server.dart`:
+    // `final targetTenantId = (role == 'superuser') ? (body['tenantId'] as String) : tenantId;`
+    // So if we use a tenant admin token, we don't strictly need to pass it, but passing it doesn't hurt if it matches.
+    // However, if we don't know it here easily...
+    // Let's assume `adminToken` is a valid token.
+
+    // First, verify who is calling. Tests usually passed the result of `registerAndLogin` which returned a tenant admin token.
+    // BUT now `registerAndLogin` returns a regular user token (since we create a user).
+    // Wait, in `registerAndLogin` above, I create a user and return THEIR token.
+    // That user currently has role 'user' (default in `api/users`?).
+    // `server.dart`: `final role = body['role'] ?? 'user';`
+    // And `POST /api/users` is restricted to `['tenant_admin', 'superuser']`.
+    // So a regular user CANNOT create another user.
+    // This breaks `registerUserInTenant` if `adminToken` is just a regular user.
+
+    // Fix: `registerAndLogin` should probably return a tenant admin if possible, OR we rely on superuser for test setup.
+    // Tests rely on `registerAndLogin` to get a token to connect to WS.
+
+    // Strategy: Use SUPERUSER exclusively for test setup helper specific to creating users.
+    // `registerUserInTenant` should act as "Provision user in tenant".
+
+    // Login superuser again
+    final superRes = await http.post(
+      Uri.parse('$httpUrl/auth/login'),
+      body: jsonEncode({'username': 'superuser', 'password': 'superuser'}),
+      headers: {'Content-Type': 'application/json'},
+    );
+    final superToken = jsonDecode(superRes.body)['accessToken'];
+
+    // To create a user, we need the tenantId.
+    // The previous `registerUserInTenant` didn't take tenantId, it relied on the `adminToken` context.
+    // Now we need it.
+    // We can extract it from the `adminToken` passed in?
+    final parts = adminToken.split('.');
+    final payload = jsonDecode(utf8.decode(base64.decode(base64.normalize(parts[1]))));
+    final tId = payload['tenant_id'];
+
     final res = await http.post(
       Uri.parse('$httpUrl/api/users'),
-      headers: {'Authorization': 'Bearer $adminToken'},
-      body: jsonEncode({'username': username, 'password': 'password'}),
+      headers: {'Authorization': 'Bearer $superToken', 'Content-Type': 'application/json'},
+      body: jsonEncode({'username': username, 'password': 'password', 'tenantId': tId}),
     );
     if (res.statusCode != 200) throw Exception('Create user failed: ${res.body}');
 
     // Login as new user
-    final loginRes = await http.post(Uri.parse('$httpUrl/auth/login'), body: jsonEncode({'username': username, 'password': 'password'}));
+    final loginRes = await http.post(
+      Uri.parse('$httpUrl/auth/login'),
+      body: jsonEncode({'username': username, 'password': 'password'}),
+      headers: {'Content-Type': 'application/json'},
+    );
     return jsonDecode(loginRes.body)['accessToken'];
   }
 
@@ -70,6 +155,8 @@ void main() {
         'DB_USER': 'dart_user',
         'DB_PASS': 'dart_password',
         'DB_NAME': 'legacy_gantt',
+        'SUPERUSER_USERNAME': 'superuser',
+        'SUPERUSER_PASSWORD': 'superuser',
       },
     );
 

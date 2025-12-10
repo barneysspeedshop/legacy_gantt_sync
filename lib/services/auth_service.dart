@@ -186,7 +186,7 @@ class AuthService {
     final tenantId = 'system';
     // Ensure system tenant exists
     await _connection.execute(
-      "INSERT INTO auth.tenants (id, name, is_active) VALUES (@id, 'System', true) ON CONFLICT (id) DO NOTHING",
+      Sql.named("INSERT INTO auth.tenants (id, name, is_active) VALUES (@id, 'System', true) ON CONFLICT (id) DO NOTHING"),
       parameters: {'id': tenantId},
     );
 
