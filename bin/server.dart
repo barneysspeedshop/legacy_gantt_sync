@@ -19,6 +19,8 @@ import 'package:legacy_gantt_sync/utils/logger.dart';
 final Map<String, List<WebSocketChannel>> _channels = {};
 // Cached CRDT instances per tenant
 final Map<String, PostgresCrdt> _tenantCrdts = {};
+// In-flight initialization futures to prevent race conditions
+final Map<String, Future<PostgresCrdt>> _crdtFutures = {};
 
 // We need to associate metadata with the socket
 class ClientInfo {
@@ -31,96 +33,109 @@ class ClientInfo {
 
 final Map<WebSocketChannel, ClientInfo> _clientInfos = {};
 
-Future<PostgresCrdt> _getTenantCrdt(String tenantId) async {
+Future<PostgresCrdt> _getTenantCrdt(String tenantId) {
   if (_tenantCrdts.containsKey(tenantId)) {
-    return _tenantCrdts[tenantId]!;
+    return Future.value(_tenantCrdts[tenantId]!);
   }
 
-  // Sanitize tenantId to prevent SQL injection (simple check)
-  final crdt = await PostgresCrdt.open(
-    Platform.environment['DB_NAME'] ?? 'legacy_gantt',
-    host: Platform.environment['DB_HOST'] ?? 'localhost',
-    port: int.parse(Platform.environment['DB_PORT'] ?? '5432'),
-    username: Platform.environment['DB_USER'] ?? 'dart_user',
-    password: Platform.environment['DB_PASS'] ?? 'dart_password',
-    sslMode: SslMode.disable, // Local postgres doesn't have SSL configured usually
-  );
+  return _crdtFutures.putIfAbsent(tenantId, () async {
+    try {
+      // Sanitize tenantId to prevent SQL injection (simple check)
+      final crdt = await PostgresCrdt.open(
+        Platform.environment['DB_NAME'] ?? 'legacy_gantt',
+        host: Platform.environment['DB_HOST'] ?? 'localhost',
+        port: int.parse(Platform.environment['DB_PORT'] ?? '5432'),
+        username: Platform.environment['DB_USER'] ?? 'dart_user',
+        password: Platform.environment['DB_PASS'] ?? 'dart_password',
+        sslMode: SslMode.disable, // Local postgres doesn't have SSL configured usually
+      );
 
-  final schema = '"$tenantId"';
+      final schema = '"$tenantId"';
 
-  await crdt.execute('CREATE SCHEMA IF NOT EXISTS $schema');
-  await crdt.execute('SET search_path TO $schema');
+      await crdt.execute('CREATE SCHEMA IF NOT EXISTS $schema');
+      await crdt.execute('SET search_path TO $schema');
 
-  // Create base tables for Gantt
-  await crdt.execute('''
-CREATE TABLE IF NOT EXISTS "$tenantId".tasks (
-  id TEXT PRIMARY KEY,
-  name TEXT,
-  gantt_type TEXT,
-  start_date BIGINT,
-  end_date BIGINT,
-  parent_id TEXT,
-  hlc TEXT NOT NULL DEFAULT '',
-  node_id TEXT NOT NULL DEFAULT '',
-  modified TEXT NOT NULL DEFAULT '',
-  is_deleted BOOLEAN NOT NULL DEFAULT FALSE
-)
-''');
-  // Migration for existing tables
-  try {
-    // Rename column if it exists as 'type'
-    await crdt.execute('ALTER TABLE "$tenantId".tasks RENAME COLUMN type TO gantt_type');
-  } catch (_) {
-    // Ignore if column doesn't exist or is already renamed
-  }
-  try {
-    // Add if missing (for new tables or if rename failed/skipped)
-    await crdt.execute('ALTER TABLE "$tenantId".tasks ADD COLUMN IF NOT EXISTS gantt_type TEXT');
-  } catch (_) {}
+      // Create base tables for Gantt
+      await crdt.execute('''
+    CREATE TABLE IF NOT EXISTS "$tenantId".tasks (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      gantt_type TEXT,
+      start_date BIGINT,
+      end_date BIGINT,
+      parent_id TEXT,
+      hlc TEXT NOT NULL DEFAULT '',
+      node_id TEXT NOT NULL DEFAULT '',
+      modified TEXT NOT NULL DEFAULT '',
+      is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+    )
+    ''');
+      // Migration for existing tables
+      try {
+        // Rename column if it exists as 'type'
+        await crdt.execute('ALTER TABLE "$tenantId".tasks RENAME COLUMN type TO gantt_type');
+      } catch (_) {
+        // Ignore if column doesn't exist or is already renamed
+      }
+      try {
+        // Add if missing (for new tables or if rename failed/skipped)
+        await crdt.execute('ALTER TABLE "$tenantId".tasks ADD COLUMN IF NOT EXISTS gantt_type TEXT');
+      } catch (_) {}
 
-  await crdt.execute('''
-CREATE TABLE IF NOT EXISTS "$tenantId".dependencies (
-  predecessor_task_id TEXT NOT NULL,
-  successor_task_id TEXT NOT NULL,
-  dependency_type TEXT NOT NULL DEFAULT 'finishToStart',
-  hlc TEXT NOT NULL DEFAULT '',
-  node_id TEXT NOT NULL DEFAULT '',
-  modified TEXT NOT NULL DEFAULT '',
-  is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
-  PRIMARY KEY (predecessor_task_id, successor_task_id)
-)
-''');
+      await crdt.execute('''
+    CREATE TABLE IF NOT EXISTS "$tenantId".dependencies (
+      predecessor_task_id TEXT NOT NULL,
+      successor_task_id TEXT NOT NULL,
+      dependency_type TEXT NOT NULL DEFAULT 'finishToStart',
+      hlc TEXT NOT NULL DEFAULT '',
+      node_id TEXT NOT NULL DEFAULT '',
+      modified TEXT NOT NULL DEFAULT '',
+      is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+      PRIMARY KEY (predecessor_task_id, successor_task_id)
+    )
+    ''');
 
-  // Migration for dependencies table
-  try {
-    // Rename column if it exists as 'type'
-    await crdt.execute('ALTER TABLE "$tenantId".dependencies RENAME COLUMN type TO dependency_type');
-  } catch (_) {
-    // Ignore if column doesn't exist or is already renamed
-  }
+      // Migration for dependencies table
+      try {
+        // Rename column if it exists as 'type'
+        await crdt.execute('ALTER TABLE "$tenantId".dependencies RENAME COLUMN type TO dependency_type');
+      } catch (_) {
+        // Ignore if column doesn't exist or is already renamed
+      }
 
-  // Create resources table
-  await crdt.execute('''
-CREATE TABLE IF NOT EXISTS "$tenantId".resources (
-  id TEXT PRIMARY KEY,
-  name TEXT,
-  parent_id TEXT,
-  is_expanded BOOLEAN NOT NULL DEFAULT TRUE,
-  hlc TEXT NOT NULL DEFAULT '',
-  node_id TEXT NOT NULL DEFAULT '',
-  modified TEXT NOT NULL DEFAULT '',
-  is_deleted BOOLEAN NOT NULL DEFAULT FALSE
-)
-''');
-  try {
-    // Add if missing
-    await crdt.execute('ALTER TABLE "$tenantId".dependencies ADD COLUMN IF NOT EXISTS dependency_type TEXT DEFAULT \'finishToStart\'');
-  } catch (_) {}
+      // Create resources table
+      await crdt.execute('''
+    CREATE TABLE IF NOT EXISTS "$tenantId".resources (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      parent_id TEXT,
+      gantt_type TEXT,
+      is_expanded BOOLEAN NOT NULL DEFAULT TRUE,
+      hlc TEXT NOT NULL DEFAULT '',
+      node_id TEXT NOT NULL DEFAULT '',
+      modified TEXT NOT NULL DEFAULT '',
+      is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+    )
+    ''');
+      try {
+        // Add if missing
+        await crdt.execute('ALTER TABLE "$tenantId".dependencies ADD COLUMN IF NOT EXISTS dependency_type TEXT DEFAULT \'finishToStart\'');
+      } catch (_) {}
 
-  _tenantCrdts[tenantId] = crdt;
-  JsonLogger.info('CRDT_INIT', {'tenant_id': tenantId});
+      try {
+        await crdt.execute('ALTER TABLE "$tenantId".resources ADD COLUMN IF NOT EXISTS gantt_type TEXT');
+      } catch (_) {}
 
-  return crdt;
+      _tenantCrdts[tenantId] = crdt;
+      JsonLogger.info('CRDT_INIT', {'tenant_id': tenantId});
+
+      return crdt;
+    } finally {
+      // Keep the future in map? No, once satisfied, if we remove it, future calls hit _tenantCrdts.
+      // But we must populate _tenantCrdts BEFORE removing.
+      _crdtFutures.remove(tenantId);
+    }
+  });
 }
 
 Middleware corsHeaders() {
@@ -266,7 +281,7 @@ void main(List<String> args) async {
               } else {
                 message = ProtocolMessage.operation(
                   type: type ?? 'unknown',
-                  data: jsonMap,
+                  data: jsonMap['data'] ?? {},
                   timestamp: jsonMap['timestamp'] as int? ?? DateTime.now().millisecondsSinceEpoch,
                   actorId: userId,
                 );
@@ -330,7 +345,7 @@ void main(List<String> args) async {
                         };
                         final envelope = {
                           'type': 'INSERT_DEPENDENCY',
-                          'data': cleanData,
+                          'data': {'data': cleanData},
                           'timestamp': DateTime.now().millisecondsSinceEpoch,
                           'actorId': 'server-sync',
                         };
@@ -349,6 +364,7 @@ void main(List<String> args) async {
                           'parent_id': record['parent_id'],
                           'isExpanded': record['is_expanded'],
                           'is_expanded': record['is_expanded'],
+                          'gantt_type': record['gantt_type'],
                         };
                         final envelope = {
                           'type': 'INSERT_RESOURCE',
@@ -381,7 +397,11 @@ void main(List<String> args) async {
                       final type = msg.type;
 
                       if (type == 'INSERT_DEPENDENCY') {
-                        final data = msg.data['data'];
+                        var data = msg.data['data'];
+                        if (data != null && data['data'] != null && data['data'] is Map) {
+                          // Handle double nesting (data.data) which seems to be sent by tests/client
+                          data = data['data'];
+                        }
                         final pred = data['predecessorTaskId'];
                         final succ = data['successorTaskId'];
                         final depType = data['dependency_type'] ?? data['dependencyType'] ?? data['type'] ?? 'finishToStart';
@@ -391,7 +411,10 @@ void main(List<String> args) async {
                           [pred, succ, depType],
                         );
                       } else if (type == 'DELETE_DEPENDENCY') {
-                        final data = msg.data['data'];
+                        var data = msg.data['data'];
+                        if (data != null && data['data'] != null && data['data'] is Map) {
+                          data = data['data'];
+                        }
                         final pred = data['predecessorTaskId'];
                         final succ = data['successorTaskId'];
 
@@ -532,7 +555,7 @@ void main(List<String> args) async {
                         // Since there is no `else` block that throws (just an UNKNOWN_OPERATION log),
                         // we can just let it fall through to the broadcast logic.
                         // However, to be explicit and avoid "UNKNOWN_OPERATION" log, we should have an empty block.
-                      } else if (type == 'GHOST_UPDATE') {
+                      } else if (type == 'GHOST_UPDATE' || type == 'PRESENCE_UPDATE') {
                         // Just broadcast, do not persist.
                         // We rely on the broadcast logic below if it falls through,
                         // BUT we must ensure the `if (type != 'RESET_DATA')` block picks it up.
@@ -547,7 +570,13 @@ void main(List<String> args) async {
                       if (type != 'RESET_DATA') {
                         final subscribers = _channels[currentChannel];
                         if (subscribers != null) {
-                          final encoded = jsonEncode(msg.data);
+                          final envelope = {
+                            'type': msg.type,
+                            'data': (msg as dynamic).data,
+                            'timestamp': (msg as dynamic).timestamp,
+                            'actorId': (msg as dynamic).actorId,
+                          };
+                          final encoded = jsonEncode(envelope);
                           for (final client in subscribers) {
                             if (client != channel) {
                               client.sink.add(encoded);

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -6,18 +7,20 @@ import 'package:test/test.dart';
 
 void main() {
   Process? serverProcess;
-  final port = 8081; // Use different port to avoid conflict
-  final host = 'http://localhost:$port';
+  late int port;
+  late String host;
   final secret = 'test_secret_key';
 
   setUpAll(() async {
+    final portCompleter = Completer<int>();
+
     // Start server with specific port and secret
     // Note: Depends on local Postgres being available as per server config
     serverProcess = await Process.start(
       'dart',
       ['bin/server.dart'],
       environment: {
-        'LEGACY_GANTT_SYNC_PORT': port.toString(),
+        'LEGACY_GANTT_SYNC_PORT': '0',
         'JWT_SECRET': secret,
         'DB_HOST': 'localhost', // Ensure these match your environment
         'DB_PORT': '5432',
@@ -27,11 +30,26 @@ void main() {
       },
     );
 
-    // Wait for server startup
-    await Future.delayed(const Duration(seconds: 3));
-
-    serverProcess!.stdout.transform(utf8.decoder).listen((line) => print('[Server Out] $line'));
+    // Listen to stdout to capture the port
+    serverProcess!.stdout.transform(utf8.decoder).transform(const LineSplitter()).listen((line) {
+      print('[Server Out] $line');
+      if (!portCompleter.isCompleted && line.contains('SERVER_START')) {
+        try {
+          final json = jsonDecode(line);
+          if (json['event'] == 'SERVER_START') {
+            final data = json['data'];
+            final actualPort = data['port'] as int;
+            portCompleter.complete(actualPort);
+          }
+        } catch (_) {}
+      }
+    });
     serverProcess!.stderr.transform(utf8.decoder).listen((line) => print('[Server Err] $line'));
+
+    // Wait for server startup
+    port = await portCompleter.future.timeout(const Duration(seconds: 10));
+    host = 'http://localhost:$port';
+    print('Auth Test Server started on port $port');
   });
 
   tearDownAll(() {
@@ -50,7 +68,7 @@ void main() {
     test('Register Tenant', () async {
       final response = await http.post(
         Uri.parse('$host/auth/register'),
-        body: jsonEncode({'tenantName': tenantName, 'adminUsername': adminUsername, 'adminPassword': 'password123'}),
+        body: jsonEncode({'tenantName': tenantName, 'adminUsername': adminUsername, 'adminPassword': 'password'}),
       );
 
       expect(response.statusCode, 200);
@@ -60,7 +78,7 @@ void main() {
     });
 
     test('Login Tenant Admin', () async {
-      final response = await http.post(Uri.parse('$host/auth/login'), body: jsonEncode({'username': adminUsername, 'password': 'password123'}));
+      final response = await http.post(Uri.parse('$host/auth/login'), body: jsonEncode({'username': adminUsername, 'password': 'password'}));
 
       expect(response.statusCode, 200);
       final body = jsonDecode(response.body);

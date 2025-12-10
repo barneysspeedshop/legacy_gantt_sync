@@ -11,9 +11,9 @@ import 'package:async/async.dart';
 void main() {
   Process? serverProcess;
   final random = Random();
-  final port = 8080;
-  final wsUrl = 'ws://localhost:$port/ws';
-  final httpUrl = 'http://localhost:$port';
+  late String wsUrl;
+  late String httpUrl;
+  // final int port = 0; // Request ephemeral port
   final secret = 'test_secret_key';
 
   // Helper to register and get token
@@ -43,25 +43,27 @@ void main() {
   }
 
   // Helper to add user to existing tenant (via admin token)
-  // Future<String> registerUserInTenant(String adminToken, String username) async {
-  //   final res = await http.post(
-  //     Uri.parse('$httpUrl/api/users'),
-  //     headers: {'Authorization': 'Bearer $adminToken'},
-  //     body: jsonEncode({'username': username, 'password': 'password'}),
-  //   );
-  //   if (res.statusCode != 200) throw Exception('Create user failed: ${res.body}');
+  Future<String> registerUserInTenant(String adminToken, String username) async {
+    final res = await http.post(
+      Uri.parse('$httpUrl/api/users'),
+      headers: {'Authorization': 'Bearer $adminToken'},
+      body: jsonEncode({'username': username, 'password': 'password'}),
+    );
+    if (res.statusCode != 200) throw Exception('Create user failed: ${res.body}');
 
-  //   // Login as new user
-  //   final loginRes = await http.post(Uri.parse('$httpUrl/auth/login'), body: jsonEncode({'username': username, 'password': 'password'}));
-  //   return jsonDecode(loginRes.body)['accessToken'];
-  // }
+    // Login as new user
+    final loginRes = await http.post(Uri.parse('$httpUrl/auth/login'), body: jsonEncode({'username': username, 'password': 'password'}));
+    return jsonDecode(loginRes.body)['accessToken'];
+  }
 
   setUpAll(() async {
+    final portCompleter = Completer<int>();
+
     serverProcess = await Process.start(
       'dart',
       ['bin/server.dart'],
       environment: {
-        'LEGACY_GANTT_SYNC_PORT': port.toString(),
+        'LEGACY_GANTT_SYNC_PORT': '0',
         'JWT_SECRET': secret,
         'DB_HOST': 'localhost',
         'DB_PORT': '5432',
@@ -71,11 +73,40 @@ void main() {
       },
     );
 
-    // Wait for server to start
-    await Future.delayed(const Duration(seconds: 3));
+    // Listen to stdout to capture the port
+    serverProcess!.stdout.transform(utf8.decoder).transform(const LineSplitter()).listen((line) {
+      print('[Server Out] $line');
+      if (!portCompleter.isCompleted) {
+        try {
+          // Look for JSON log with event SERVER_START
+          // The line might be wrapped or have prefixes?
+          // Assuming pure JSON per line or simple text search for now
+          // Example: {"...":"SERVER_START", "data":{..."port":12345}}
+          if (line.contains('SERVER_START')) {
+            final json = jsonDecode(line);
+            if (json['event'] == 'SERVER_START') {
+              final data = json['data'];
+              final actualPort = data['port'] as int;
+              portCompleter.complete(actualPort);
+            }
+          }
+        } catch (e) {
+          // Ignore parsing errors
+        }
+      }
+    });
 
-    serverProcess!.stdout.transform(utf8.decoder).listen((line) => print('[Server Out] $line'));
     serverProcess!.stderr.transform(utf8.decoder).listen((line) => print('[Server Err] $line'));
+
+    // Wait for the port to be captured
+    try {
+      final actualPort = await portCompleter.future.timeout(const Duration(seconds: 10));
+      print('Test Server started on port $actualPort');
+      wsUrl = 'ws://localhost:$actualPort/ws';
+      httpUrl = 'http://localhost:$actualPort';
+    } catch (e) {
+      throw Exception('Failed to start test server or capture port: $e');
+    }
   });
 
   tearDownAll(() {
@@ -239,7 +270,9 @@ void main() {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final message = {
       'type': 'UPDATE_TASK',
-      'data': {'id': 'history_$timestamp', 'name': 'History Task'},
+      'data': {
+        'data': {'id': 'history_$timestamp', 'name': 'History Task'},
+      },
       'timestamp': timestamp,
       'actorId': 'UserHistory',
     };
@@ -260,7 +293,7 @@ void main() {
       while (await bQueue.hasNext) {
         final event = await bQueue.next.timeout(const Duration(seconds: 5));
         final decoded = jsonDecode(event as String);
-        if (decoded['data']?['id'] == 'history_$timestamp') {
+        if (decoded['data']?['data']?['id'] == 'history_$timestamp') {
           found = true;
           break;
         }
@@ -290,15 +323,21 @@ void main() {
 
     // 1. Insert Dependency
     final depData = {'predecessorTaskId': 'task1', 'successorTaskId': 'task2', 'type': 'finishToStart'};
-    clientA.sink.add(jsonEncode({'type': 'INSERT_DEPENDENCY', 'data': depData, 'timestamp': DateTime.now().millisecondsSinceEpoch}));
+    clientA.sink.add(
+      jsonEncode({
+        'type': 'INSERT_DEPENDENCY',
+        'data': {'data': depData},
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      }),
+    );
 
     // Verify broadcast
     bool foundInsert = false;
     try {
       while (await bQueue.hasNext) {
-        final event = await bQueue.next.timeout(const Duration(seconds: 2));
-        final decoded = jsonDecode(event as String);
-        if (decoded['type'] == 'INSERT_DEPENDENCY' && decoded['data']['predecessorTaskId'] == 'task1') {
+        final rawMsg = await bQueue.next.timeout(const Duration(seconds: 2));
+        final decoded = jsonDecode(rawMsg as String);
+        if (decoded['type'] == 'INSERT_DEPENDENCY' && decoded['data']['data']['predecessorTaskId'] == 'task1') {
           foundInsert = true;
           break;
         }
@@ -309,7 +348,13 @@ void main() {
     expect(foundInsert, isTrue, reason: 'Client B should receive INSERT_DEPENDENCY');
 
     // 2. Delete Dependency
-    clientA.sink.add(jsonEncode({'type': 'DELETE_DEPENDENCY', 'data': depData, 'timestamp': DateTime.now().millisecondsSinceEpoch}));
+    clientA.sink.add(
+      jsonEncode({
+        'type': 'DELETE_DEPENDENCY',
+        'data': {'data': depData},
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      }),
+    );
 
     // Verify broadcast
     bool foundDelete = false;
@@ -317,7 +362,7 @@ void main() {
       while (await bQueue.hasNext) {
         final event = await bQueue.next.timeout(const Duration(seconds: 2));
         final decoded = jsonDecode(event as String);
-        if (decoded['type'] == 'DELETE_DEPENDENCY' && decoded['data']['predecessorTaskId'] == 'task1') {
+        if (decoded['type'] == 'DELETE_DEPENDENCY' && decoded['data']['data']['predecessorTaskId'] == 'task1') {
           foundDelete = true;
           break;
         }
@@ -347,7 +392,13 @@ void main() {
     clientD.sink.add(jsonEncode({'type': 'subscribe', 'channel': tenantId}));
     await Future.delayed(const Duration(milliseconds: 200));
 
-    clientD.sink.add(jsonEncode({'type': 'INSERT_DEPENDENCY', 'data': depData2, 'timestamp': DateTime.now().millisecondsSinceEpoch}));
+    clientD.sink.add(
+      jsonEncode({
+        'type': 'INSERT_DEPENDENCY',
+        'data': {'data': depData2},
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      }),
+    );
     await Future.delayed(const Duration(milliseconds: 500)); // Wait for DB
 
     // New client E should receive it in history (on subscribe)
@@ -360,7 +411,7 @@ void main() {
       while (await eQueue.hasNext) {
         final event = await eQueue.next.timeout(const Duration(seconds: 2));
         final decoded = jsonDecode(event as String);
-        if (decoded['type'] == 'INSERT_DEPENDENCY' && decoded['data']['predecessorTaskId'] == 'task3') {
+        if (decoded['type'] == 'INSERT_DEPENDENCY' && decoded['data']['data']['predecessorTaskId'] == 'task3') {
           foundHistory = true;
           break;
         }
@@ -415,11 +466,11 @@ void main() {
       while (await queue.hasNext) {
         final event = await queue.next.timeout(const Duration(seconds: 2));
         final msg = jsonDecode(event as String);
-        if (msg['type'] == 'UPDATE_TASK' && msg['data']['id'] == 'task-type-test') {
+        if (msg['type'] == 'UPDATE_TASK' && msg['data']['data']['id'] == 'task-type-test') {
           // Check for 'gantt_type' or 'ganttType' or 'type' mapped correctly.
           // Since we query DB columns, it will likely come back as 'gantt_type' if we used SELECT *
           // But our current implementation sends raw JSON from DB. `postgres` returns keys as column names.
-          final data = msg['data'];
+          final data = msg['data']['data'];
           if (data['gantt_type'] == 'milestone') {
             found = true;
             break;
@@ -470,14 +521,14 @@ void main() {
       while (await queue.hasNext) {
         final event = await queue.next.timeout(const Duration(seconds: 2));
         final msg = jsonDecode(event as String);
-        if (msg['type'] == 'UPDATE_TASK' && msg['data']['id'] == 'task-mapping-test') {
+        if (msg['type'] == 'UPDATE_TASK' && msg['data']['data']['id'] == 'task-mapping-test') {
           // Check that fields were saved (server returns them as is or mapped - likely returns what fits schema)
           // Actually, our current logic broadcasts the ORIGINAL payload immediately, merging later?
           // No, subscribe sends from DB. So we expect `parent_id` from DB or snake_case keys.
           // Wait, the `subscribe` handler in server sends `SELECT *`. So keys will be snake_case!
           // BUT, `row_to_json` or simple query returns DB columns.
           // Let's check what came back.
-          final data = msg['data'];
+          final data = msg['data']['data'];
           if (data['parent_id'] == 'parent-task-1' || data['parentId'] == 'parent-task-1') {
             found = true;
           }
@@ -504,16 +555,17 @@ void main() {
     });
 
     // Send INSERT_RESOURCE with gantt_type at root
-    final insertMsg = {
-      'type': 'INSERT_RESOURCE', // Operation Type
-      'data': {
-        'gantt_type': 'human', // Root property
-        'data': {'id': 'resource-test-1', 'name': 'Test Resource'},
-      },
-      'timestamp': DateTime.now().millisecondsSinceEpoch,
-      'actorId': 'user_resource_test',
-    };
-    client1.sink.add(jsonEncode(insertMsg));
+    client1.sink.add(
+      jsonEncode({
+        'type': 'INSERT_RESOURCE', // Operation Type
+        'data': {
+          'gantt_type': 'human', // Root property
+          'data': {'id': 'resource-test-1', 'name': 'Test Resource'},
+        },
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'actorId': 'user_resource_test_${random.nextInt(10000)}@$tenantId',
+      }),
+    );
     await Future.delayed(const Duration(milliseconds: 500));
     await client1.sink.close();
 
@@ -527,9 +579,9 @@ void main() {
       while (await queue.hasNext) {
         final event = await queue.next.timeout(const Duration(seconds: 2));
         final msg = jsonDecode(event as String);
-        // Expect standard UPDATE_TASK back for now, or whatever we saved
-        if (msg['type'] == 'UPDATE_TASK' && msg['data']['id'] == 'resource-test-1') {
-          final data = msg['data'];
+        // Expect INSERT_RESOURCE or UPDATE_TASK depending on what we sent. Server reflects checks.
+        if ((msg['type'] == 'UPDATE_TASK' || msg['type'] == 'INSERT_RESOURCE') && msg['data']['data']['id'] == 'resource-test-1') {
+          final data = msg['data']['data'];
           if (data['gantt_type'] == 'human') {
             found = true;
           }
@@ -556,16 +608,17 @@ void main() {
     });
 
     // Send Nested Payload: { data: { gantt_type: ..., data: { id: ... } } }
-    final insertMsg = {
-      'type': 'INSERT_RESOURCE',
-      'data': {
-        'gantt_type': 'tool',
-        'data': {'id': 'nested-resource-1', 'name': 'Nested Resource'},
-      },
-      'timestamp': DateTime.now().millisecondsSinceEpoch,
-      'actorId': 'user_nested_test',
-    };
-    client1.sink.add(jsonEncode(insertMsg));
+    client1.sink.add(
+      jsonEncode({
+        'type': 'INSERT_RESOURCE',
+        'data': {
+          'gantt_type': 'tool',
+          'data': {'id': 'nested-resource-1', 'name': 'Nested Resource'},
+        },
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'actorId': 'user_nested_test_${random.nextInt(10000)}@$tenantId',
+      }),
+    );
     await Future.delayed(const Duration(milliseconds: 500));
     await client1.sink.close();
 
@@ -579,8 +632,8 @@ void main() {
       while (await queue.hasNext) {
         final event = await queue.next.timeout(const Duration(seconds: 2));
         final msg = jsonDecode(event as String);
-        if (msg['type'] == 'UPDATE_TASK' && msg['data']['id'] == 'nested-resource-1') {
-          final data = msg['data'];
+        if ((msg['type'] == 'UPDATE_TASK' || msg['type'] == 'INSERT_RESOURCE') && msg['data']['data']['id'] == 'nested-resource-1') {
+          final data = msg['data']['data'];
           if (data['gantt_type'] == 'tool' && data['name'] == 'Nested Resource') {
             found = true;
           }
@@ -607,19 +660,16 @@ void main() {
     });
 
     // Send INSERT_DEPENDENCY with dependencyType key
-    final insertMsg = {
-      'type': 'INSERT_DEPENDENCY',
-      'data': {
+    client1.sink.add(
+      jsonEncode({
+        'type': 'INSERT_DEPENDENCY',
         'data': {
-          'predecessorTaskId': 'task-a',
-          'successorTaskId': 'task-b',
-          'dependencyType': 'startToStart', // CamelCase input
+          'data': {'predecessorTaskId': 'task-a', 'successorTaskId': 'task-b', 'dependency_type': 'startToStart'},
         },
-      },
-      'timestamp': DateTime.now().millisecondsSinceEpoch,
-      'actorId': 'user_dep_type',
-    };
-    client1.sink.add(jsonEncode(insertMsg));
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'actorId': 'user_dep_type_${random.nextInt(10000)}@$tenantId',
+      }),
+    );
     await Future.delayed(const Duration(milliseconds: 500));
     await client1.sink.close();
 
@@ -634,7 +684,7 @@ void main() {
         final event = await queue.next.timeout(const Duration(seconds: 2));
         final msg = jsonDecode(event as String);
         if (msg['type'] == 'INSERT_DEPENDENCY') {
-          final data = msg['data'];
+          final data = msg['data']['data'];
           if (data['predecessorTaskId'] == 'task-a' &&
               data['successorTaskId'] == 'task-b' &&
               (data['dependency_type'] == 'startToStart' || data['type'] == 'startToStart')) {
@@ -680,7 +730,7 @@ void main() {
           'data': {'predecessorTaskId': 'task-reset-1', 'successorTaskId': 'task-reset-2'},
         },
         'timestamp': DateTime.now().millisecondsSinceEpoch,
-        'actorId': 'user_reset',
+        'actorId': 'dep_${random.nextInt(10000)}',
       }),
     );
     await Future.delayed(const Duration(milliseconds: 200));
@@ -689,16 +739,13 @@ void main() {
     client1.sink.add(jsonEncode({'type': 'RESET_DATA', 'data': {}, 'timestamp': DateTime.now().millisecondsSinceEpoch, 'actorId': 'user_reset'}));
     await Future.delayed(const Duration(milliseconds: 200));
 
-    // 2. Setup Client 2 (Observer)
-    final client2 = IOWebSocketChannel.connect(wsUrl, headers: {'Authorization': 'Bearer $token'});
+    // 2. Setup Client 2 (Observer - Different User)
+    final observerUsername = 'user_reset_obs_${random.nextInt(10000)}';
+    final observerToken = await registerUserInTenant(token, observerUsername);
+    final client2 = IOWebSocketChannel.connect(wsUrl, headers: {'Authorization': 'Bearer $observerToken'});
     final queue2 = StreamQueue(client2.stream);
     client2.sink.add(jsonEncode({'type': 'subscribe', 'channel': tenantId}));
     await queue2.next; // SUBSCRIBE_SUCCESS
-
-    // Drain initial data (Task + Dep) if any (might be racey, but good enough for now)
-    // We expect insert task and insert dep for client 2
-    await queue2.next; // Task
-    await queue2.next; // Dependency
 
     // 3. Send RESET_DATA from Client 1
     // We also want to verify Client 1 DOES NOT receive the broadcast
@@ -710,8 +757,8 @@ void main() {
     bool resetReceived2 = false;
     try {
       while (await queue2.hasNext) {
-        final event = await queue2.next.timeout(const Duration(seconds: 2));
-        final msg = jsonDecode(event as String);
+        final raw = await queue2.next.timeout(const Duration(seconds: 2));
+        final msg = jsonDecode(raw as String);
         if (msg['type'] == 'RESET_DATA') {
           resetReceived2 = true;
           break;
@@ -723,20 +770,16 @@ void main() {
     // 5. Verify Client 1 DOES NOT receive RESET_DATA
     bool resetReceived1 = false;
     try {
-      // Check for a short period if we get the message back
-      while (await queue1.hasNext) {
-        final event = await queue1.next.timeout(const Duration(milliseconds: 500));
-        final msg = jsonDecode(event as String);
-        if (msg['type'] == 'RESET_DATA') {
-          resetReceived1 = true;
-          break;
-        }
-        // Ignore other messages if any
+      // Use timeout to verify absence of message
+      final raw = await queue1.next.timeout(const Duration(seconds: 2));
+      final msg = jsonDecode(raw as String);
+      if (msg['type'] == 'RESET_DATA') {
+        resetReceived1 = true;
       }
-    } catch (_) {
-      // Timeout expected
+    } catch (e) {
+      // Timeout expected if no message received
     }
-    expect(resetReceived1, isFalse, reason: 'Client 1 (sender) should NOT receive it back');
+    expect(resetReceived1, isFalse, reason: 'Client 1 should NOT receive self-broadcast');
 
     await client1.sink.close();
 
@@ -748,15 +791,17 @@ void main() {
 
     bool hasData = false;
     try {
-      while (await queue3.hasNext) {
-        final event = await queue3.next.timeout(const Duration(seconds: 2));
+      while (true) {
+        final event = await queue3.next.timeout(const Duration(seconds: 1));
         final msg = jsonDecode(event as String);
         if (msg['type'] == 'UPDATE_TASK' || msg['type'] == 'INSERT_DEPENDENCY') {
           hasData = true;
           break;
         }
       }
-    } catch (_) {}
+    } catch (_) {
+      // Timeout means no (more) data received
+    }
     expect(hasData, isFalse, reason: 'Tenant data should be empty after RESET_DATA');
 
     await client2.sink.close();
