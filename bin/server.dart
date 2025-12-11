@@ -232,16 +232,14 @@ void main(List<String> args) async {
   }
 
   // --- Seeding ---
-  final superUserUser = Platform.environment['SUPERUSER_USERNAME'];
-  final superUserPass = Platform.environment['SUPERUSER_PASSWORD'];
-  if (superUserUser != null && superUserPass != null) {
-    // Don't await strictly to not block startup if DB is slow? Or should we?
-    // Better to await to ensure admin is ready before requests come in.
-    try {
-      await authService.ensureSuperuser(superUserUser, superUserPass);
-    } catch (e) {
-      JsonLogger.error('SEED_SUPERUSER_FAIL', {'error': e.toString()});
-    }
+  final superUserUser = Platform.environment['SUPERUSER_USERNAME'] ?? 'superuser';
+  final superUserPass = Platform.environment['SUPERUSER_PASSWORD'] ?? 'superuser';
+
+  // Always try to ensure superuser exists in dev/local
+  try {
+    await authService.ensureSuperuser(superUserUser, superUserPass);
+  } catch (e) {
+    JsonLogger.error('SEED_SUPERUSER_FAIL', {'error': e.toString()});
   }
 
   final app = Router();
@@ -294,7 +292,7 @@ void main(List<String> args) async {
       targetTenantId = creatorTenantId;
     }
 
-    String role = body['role'] ?? 'user';
+    final String role = body['role'] ?? 'user';
     if (role == 'superuser' && creatorRole != 'superuser') {
       return Response.forbidden('Only superusers can create superuser accounts');
     }

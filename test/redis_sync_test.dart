@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:test/test.dart';
 import 'package:web_socket_channel/io.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 
 void main() {
   Process? serverA;
@@ -13,7 +12,6 @@ void main() {
   late int portA;
   late int portB;
   late String hostA;
-  late String hostB;
 
   final dbConfig = {
     'DB_HOST': 'localhost',
@@ -57,7 +55,6 @@ void main() {
     portB = await portBCompleter.future.timeout(const Duration(seconds: 10));
 
     hostA = 'http://localhost:$portA';
-    hostB = 'http://localhost:$portB';
 
     print('Server A started on port $portA');
     print('Server B started on port $portB');

@@ -1,201 +1,0 @@
-00:00 [32m+0[0m: [1m[90mloading test/server_test.dart[0m[0m                                                                                                                                                                00:00 [32m+0[0m: (setUpAll)[0m                                                                                                                                                                                   00:01 [32m+0[0m: (setUpAll)[0m                                                                                                                                                                                   00:02 [32m+0[0m: (setUpAll)[0m                                                                                                                                                                                   00:02 [32m+0[0m: Rejects unauthorized clients[0m                                                                                                                                                                 00:02 [32m+0[0m: (setUpAll)[0m                                                                                                                                                                                   
-[Server Out] {"timestamp":"2025-12-06T14:58:32.588137","level":"INFO","event":"SERVER_START","data":{"host":"0.0.0.0","port":8080}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:32.690059","level":"WARN","event":"AUTH_FAILURE","data":{"reason":"invalid_or_missing_token"}}
-
-[Server Out] 2025-12-06T14:58:32.687555  0:00:00.004063 GET     [403] /ws
-
-00:02 [32m+1[0m: Rejects unauthorized clients[0m                                                                                                                                                                 00:02 [32m+1[0m: Rejects invalid token[0m                                                                                                                                                                        00:02 [32m+1[0m: (setUpAll)[0m                                                                                                                                                                                   
-[Server Out] {"timestamp":"2025-12-06T14:58:32.714421","level":"WARN","event":"AUTH_FAILURE","data":{"reason":"token_verification_failed","error":"JWTInvalidException: token does not use JWS Compact Serialization"}}
-{"timestamp":"2025-12-06T14:58:32.714660","level":"WARN","event":"AUTH_FAILURE","data":{"reason":"invalid_or_missing_token"}}
-
-[Server Out] 2025-12-06T14:58:32.712539  0:00:00.002442 GET     [403] /ws
-
-00:02 [32m+2[0m: Rejects invalid token[0m                                                                                                                                                                        00:02 [32m+2[0m: Server broadcasts messages to clients in same tenant[0m                                                                                                                                         00:02 [32m+2[0m: (setUpAll)[0m                                                                                                                                                                                   
-[Server Out] {"timestamp":"2025-12-06T14:58:32.782551","level":"INFO","event":"CLIENT_CONNECTED","data":{"user_id":"userA","tenant_id":"tenantA"}}
-{"timestamp":"2025-12-06T14:58:32.784501","level":"INFO","event":"CLIENT_CONNECTED","data":{"user_id":"userA","tenant_id":"tenantA"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:32.795200","level":"INFO","event":"SUBSCRIBE_ATTEMPT","data":{"user_id":"userA","tenant_id":"tenantA","requested_channel":"tenantA"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:32.795547","level":"INFO","event":"SUBSCRIBE_SUCCESS","data":{"user_id":"userA","tenant_id":"tenantA","channel":"tenantA"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:32.832403","level":"INFO","event":"SUBSCRIBE_ATTEMPT","data":{"user_id":"userA","tenant_id":"tenantA","requested_channel":"tenantA"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:32.832871","level":"INFO","event":"SUBSCRIBE_SUCCESS","data":{"user_id":"userA","tenant_id":"tenantA","channel":"tenantA"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:32.849953","level":"INFO","event":"OP_RECEIVED","data":{"type":"UPDATE_TASK"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:32.963187","level":"INFO","event":"CRDT_INIT","data":{"tenant_id":"tenantA"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:32.963815","level":"INFO","event":"CRDT_INIT","data":{"tenant_id":"tenantA"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:32.964285","level":"INFO","event":"CRDT_INIT","data":{"tenant_id":"tenantA"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:32.975175","level":"INFO","event":"RAW_DB_DUMP","data":{"count":2}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:32.975459","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"100","data":"{id: 100, name: Task 100, start_date: null, end_date: null, parent_id: null}"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:32.976447","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"secret_task","data":"{id: secret_task, name: Secret Task, start_date: null, end_date: null, parent_id: null}"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:32.978509","level":"INFO","event":"RAW_DB_DUMP","data":{"count":2}}
-{"timestamp":"2025-12-06T14:58:32.978742","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"100","data":"{id: 100, name: Task 100, start_date: null, end_date: null, parent_id: null}"}}
-{"timestamp":"2025-12-06T14:58:32.979015","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"secret_task","data":"{id: secret_task, name: Secret Task, start_date: null, end_date: null, parent_id: null}"}}
-
-00:02 [32m+2[0m[31m -1[0m: Server broadcasts messages to clients in same tenant [1m[31m[E][0m[0m                                                                                                                                  
-  Expected: 'UserA'
-    Actual: 'server-sync'
-     Which: is different.
-            Expected: UserA
-              Actual: server-syn ...
-                      ^
-             Differ at offset 0
-  
-  package:matcher             expect
-  test/server_test.dart 82:9  main.<fn>
-  
-
-[1m[36mTo run this test again:[0m /home/patrick/IdeaProjects/flutter/bin/cache/dart-sdk/bin/dart test test/server_test.dart -p vm --plain-name 'Server broadcasts messages to clients in same tenant'
-00:02 [32m+2[0m[31m -1[0m: (setUpAll)[0m                                                                                                                                                                                
-[Server Out] {"timestamp":"2025-12-06T14:58:32.981193","level":"INFO","event":"DB_WRITE_SUCCESS","data":{"id":"100"}}
-
-00:02 [32m+2[0m[31m -1[0m: Isolates messages between tenants[0m                                                                                                                                                         00:02 [32m+2[0m[31m -1[0m: (setUpAll)[0m                                                                                                                                                                                
-[Server Out] {"timestamp":"2025-12-06T14:58:33.011417","level":"INFO","event":"CLIENT_CONNECTED","data":{"user_id":"userA","tenant_id":"tenantA"}}
-{"timestamp":"2025-12-06T14:58:33.011841","level":"INFO","event":"CLIENT_CONNECTED","data":{"user_id":"userB","tenant_id":"tenantB"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.012147","level":"INFO","event":"SUBSCRIBE_ATTEMPT","data":{"user_id":"userA","tenant_id":"tenantA","requested_channel":"tenantA"}}
-{"timestamp":"2025-12-06T14:58:33.012207","level":"INFO","event":"SUBSCRIBE_SUCCESS","data":{"user_id":"userA","tenant_id":"tenantA","channel":"tenantA"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.013317","level":"INFO","event":"SUBSCRIBE_ATTEMPT","data":{"user_id":"userB","tenant_id":"tenantB","requested_channel":"tenantB"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.013411","level":"INFO","event":"SUBSCRIBE_SUCCESS","data":{"user_id":"userB","tenant_id":"tenantB","channel":"tenantB"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.033480","level":"INFO","event":"RAW_DB_DUMP","data":{"count":2}}
-{"timestamp":"2025-12-06T14:58:33.033687","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"secret_task","data":"{id: secret_task, name: Secret Task, start_date: null, end_date: null, parent_id: null}"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.033968","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"100","data":"{id: 100, name: Task 100, start_date: null, end_date: null, parent_id: null}"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.049640","level":"INFO","event":"CRDT_INIT","data":{"tenant_id":"tenantB"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.050860","level":"INFO","event":"RAW_DB_DUMP","data":{"count":0}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.108720","level":"INFO","event":"OP_RECEIVED","data":{"type":"UPDATE_TASK"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.115548","level":"INFO","event":"DB_WRITE_SUCCESS","data":{"id":"secret_task"}}
-
-00:03 [32m+3[0m[31m -1[0m: Isolates messages between tenants[0m                                                                                                                                                         00:03 [32m+3[0m[31m -1[0m: Prevents cross-tenant subscription[0m                                                                                                                                                        00:03 [32m+3[0m[31m -1[0m: (setUpAll)[0m                                                                                                                                                                                
-[Server Out] {"timestamp":"2025-12-06T14:58:33.614159","level":"INFO","event":"CLIENT_DISCONNECTED","data":{"user_id":"userA"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.615206","level":"INFO","event":"CLIENT_DISCONNECTED","data":{"user_id":"userB"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.618921","level":"INFO","event":"CLIENT_CONNECTED","data":{"user_id":"test_user_7207_A","tenant_id":"test_tenant_2260_A"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.619727","level":"INFO","event":"SUBSCRIBE_ATTEMPT","data":{"user_id":"test_user_7207_A","tenant_id":"test_tenant_2260_A","requested_channel":"tenantB"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.619828","level":"WARN","event":"SECURITY_ALERT","data":{"message":"Cross-tenant subscription attempt","user_id":"test_user_7207_A"}}
-
-00:03 [32m+4[0m[31m -1[0m: Prevents cross-tenant subscription[0m                                                                                                                                                        00:03 [32m+4[0m[31m -1[0m: (setUpAll)[0m                                                                                                                                                                                
-[Server Out] {"timestamp":"2025-12-06T14:58:33.620770","level":"INFO","event":"CLIENT_DISCONNECTED","data":{"user_id":"test_user_7207_A"}}
-
-00:03 [32m+4[0m[31m -1[0m: New client receives history for their tenant only[0m                                                                                                                                         00:03 [32m+4[0m[31m -1[0m: (setUpAll)[0m                                                                                                                                                                                
-[Server Out] {"timestamp":"2025-12-06T14:58:33.625260","level":"INFO","event":"CLIENT_CONNECTED","data":{"user_id":"userHistory","tenant_id":"historyTenant"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.625944","level":"INFO","event":"SUBSCRIBE_ATTEMPT","data":{"user_id":"userHistory","tenant_id":"historyTenant","requested_channel":"historyTenant"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.626028","level":"INFO","event":"SUBSCRIBE_SUCCESS","data":{"user_id":"userHistory","tenant_id":"historyTenant","channel":"historyTenant"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.657529","level":"INFO","event":"CRDT_INIT","data":{"tenant_id":"historyTenant"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.659512","level":"INFO","event":"RAW_DB_DUMP","data":{"count":14}}
-{"timestamp":"2025-12-06T14:58:33.659606","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765050036895","data":"{id: history_1765050036895, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.659719","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765050108284","data":"{id: history_1765050108284, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-{"timestamp":"2025-12-06T14:58:33.659755","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765050203379","data":"{id: history_1765050203379, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.659786","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765050259952","data":"{id: history_1765050259952, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.659815","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765050336142","data":"{id: history_1765050336142, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-{"timestamp":"2025-12-06T14:58:33.659849","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765050563223","data":"{id: history_1765050563223, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.659878","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765050666137","data":"{id: history_1765050666137, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.659917","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765050757028","data":"{id: history_1765050757028, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-{"timestamp":"2025-12-06T14:58:33.659947","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765050844856","data":"{id: history_1765050844856, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.659976","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765050891704","data":"{id: history_1765050891704, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.660001","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765050922268","data":"{id: history_1765050922268, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.660023","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765050985457","data":"{id: history_1765050985457, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.660043","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765051043649","data":"{id: history_1765051043649, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.660064","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765051093359","data":"{id: history_1765051093359, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.724009","level":"INFO","event":"OP_RECEIVED","data":{"type":"UPDATE_TASK"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:33.732175","level":"INFO","event":"DB_WRITE_SUCCESS","data":{"id":"history_1765051113723"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:34.726987","level":"INFO","event":"CLIENT_CONNECTED","data":{"user_id":"userHistory","tenant_id":"historyTenant"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:34.727636","level":"INFO","event":"SUBSCRIBE_ATTEMPT","data":{"user_id":"userHistory","tenant_id":"historyTenant","requested_channel":"historyTenant"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:34.727727","level":"INFO","event":"SUBSCRIBE_SUCCESS","data":{"user_id":"userHistory","tenant_id":"historyTenant","channel":"historyTenant"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:34.730134","level":"INFO","event":"RAW_DB_DUMP","data":{"count":15}}
-{"timestamp":"2025-12-06T14:58:34.730188","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765050036895","data":"{id: history_1765050036895, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:34.730272","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765050108284","data":"{id: history_1765050108284, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-{"timestamp":"2025-12-06T14:58:34.730292","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765050203379","data":"{id: history_1765050203379, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-{"timestamp":"2025-12-06T14:58:34.730310","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765050259952","data":"{id: history_1765050259952, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:34.730326","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765050336142","data":"{id: history_1765050336142, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:34.730342","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765050563223","data":"{id: history_1765050563223, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:34.730359","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765050666137","data":"{id: history_1765050666137, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:34.730375","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765050757028","data":"{id: history_1765050757028, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:34.730391","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765050844856","data":"{id: history_1765050844856, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-{"timestamp":"2025-12-06T14:58:34.730407","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765050891704","data":"{id: history_1765050891704, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:34.730423","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765050922268","data":"{id: history_1765050922268, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:34.730439","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765050985457","data":"{id: history_1765050985457, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-{"timestamp":"2025-12-06T14:58:34.730455","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765051043649","data":"{id: history_1765051043649, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:34.730472","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765051093359","data":"{id: history_1765051093359, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:34.730488","level":"INFO","event":"SENDING_HISTORY_ITEM","data":{"id":"history_1765051113723","data":"{id: history_1765051113723, name: History Task, start_date: null, end_date: null, parent_id: null}"}}
-
-00:04 [32m+4[0m[31m -1[0m: New client receives history for their tenant only[0m                                                                                                                                         
-Client B Received: {"type":"UPDATE_TASK","data":{"id":"history_1765050036895","name":"History Task","start_date":null,"end_date":null,"parent_id":null},"timestamp":1765051114730,"actorId":"server-sync"}
-Client B Received: {"type":"UPDATE_TASK","data":{"id":"history_1765050108284","name":"History Task","start_date":null,"end_date":null,"parent_id":null},"timestamp":1765051114730,"actorId":"server-sync"}
-Client B Received: {"type":"UPDATE_TASK","data":{"id":"history_1765050203379","name":"History Task","start_date":null,"end_date":null,"parent_id":null},"timestamp":1765051114730,"actorId":"server-sync"}
-Client B Received: {"type":"UPDATE_TASK","data":{"id":"history_1765050259952","name":"History Task","start_date":null,"end_date":null,"parent_id":null},"timestamp":1765051114730,"actorId":"server-sync"}
-Client B Received: {"type":"UPDATE_TASK","data":{"id":"history_1765050336142","name":"History Task","start_date":null,"end_date":null,"parent_id":null},"timestamp":1765051114730,"actorId":"server-sync"}
-Client B Received: {"type":"UPDATE_TASK","data":{"id":"history_1765050563223","name":"History Task","start_date":null,"end_date":null,"parent_id":null},"timestamp":1765051114730,"actorId":"server-sync"}
-Client B Received: {"type":"UPDATE_TASK","data":{"id":"history_1765050666137","name":"History Task","start_date":null,"end_date":null,"parent_id":null},"timestamp":1765051114730,"actorId":"server-sync"}
-Client B Received: {"type":"UPDATE_TASK","data":{"id":"history_1765050757028","name":"History Task","start_date":null,"end_date":null,"parent_id":null},"timestamp":1765051114730,"actorId":"server-sync"}
-Client B Received: {"type":"UPDATE_TASK","data":{"id":"history_1765050844856","name":"History Task","start_date":null,"end_date":null,"parent_id":null},"timestamp":1765051114730,"actorId":"server-sync"}
-Client B Received: {"type":"UPDATE_TASK","data":{"id":"history_1765050891704","name":"History Task","start_date":null,"end_date":null,"parent_id":null},"timestamp":1765051114730,"actorId":"server-sync"}
-Client B Received: {"type":"UPDATE_TASK","data":{"id":"history_1765050922268","name":"History Task","start_date":null,"end_date":null,"parent_id":null},"timestamp":1765051114730,"actorId":"server-sync"}
-Client B Received: {"type":"UPDATE_TASK","data":{"id":"history_1765050985457","name":"History Task","start_date":null,"end_date":null,"parent_id":null},"timestamp":1765051114730,"actorId":"server-sync"}
-Client B Received: {"type":"UPDATE_TASK","data":{"id":"history_1765051043649","name":"History Task","start_date":null,"end_date":null,"parent_id":null},"timestamp":1765051114730,"actorId":"server-sync"}
-Client B Received: {"type":"UPDATE_TASK","data":{"id":"history_1765051093359","name":"History Task","start_date":null,"end_date":null,"parent_id":null},"timestamp":1765051114730,"actorId":"server-sync"}
-Client B Received: {"type":"UPDATE_TASK","data":{"id":"history_1765051113723","name":"History Task","start_date":null,"end_date":null,"parent_id":null},"timestamp":1765051114730,"actorId":"server-sync"}
-00:04 [32m+5[0m[31m -1[0m: New client receives history for their tenant only[0m                                                                                                                                         00:04 [32m+5[0m[31m -1[0m: (setUpAll)[0m                                                                                                                                                                                
-[Server Out] {"timestamp":"2025-12-06T14:58:34.733175","level":"INFO","event":"CLIENT_DISCONNECTED","data":{"user_id":"userHistory"}}
-
-[Server Out] {"timestamp":"2025-12-06T14:58:34.733414","level":"INFO","event":"CLIENT_DISCONNECTED","data":{"user_id":"userHistory"}}
-
-00:04 [32m+5[0m[31m -1[0m: Rejects banned client[0m                                                                                                                                                                     00:04 [32m+5[0m[31m -1[0m: (setUpAll)[0m                                                                                                                                                                                
-[Server Out] {"timestamp":"2025-12-06T14:58:34.743965","level":"WARN","event":"AUTH_FAILURE","data":{"reason":"banned_user","user_id":"bannedUser"}}
-{"timestamp":"2025-12-06T14:58:34.744122","level":"WARN","event":"AUTH_FAILURE","data":{"reason":"invalid_or_missing_token"}}
-
-[Server Out] 2025-12-06T14:58:34.741158  0:00:00.003088 GET     [403] /ws
-
-00:04 [32m+6[0m[31m -1[0m: Rejects banned client[0m                                                                                                                                                                     00:04 [32m+6[0m[31m -1[0m: (tearDownAll)[0m                                                                                                                                                                             00:04 [32m+6[0m[31m -1[0m: [31mSome tests failed.[0m                                                                                                                                                                        
-
-Consider enabling the flag chain-stack-traces to receive more detailed exceptions.
-For example, 'dart test --chain-stack-traces'.

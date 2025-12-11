@@ -47,7 +47,7 @@ void main() {
       // But the previous implementation threw exception.
       throw Exception('Create tenant failed: ${createTenantRes.body}');
     }
-    String effectiveTenantId = jsonDecode(createTenantRes.body)['tenantId'];
+    final String effectiveTenantId = jsonDecode(createTenantRes.body)['tenantId'];
 
     // 3. Create User in Tenant
     // Check if we are creating the initial admin or a regular user?
