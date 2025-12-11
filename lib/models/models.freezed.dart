@@ -183,10 +183,10 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String type,  String channel)?  subscribe,TResult Function( String type,  Map<String, dynamic> data,  int timestamp,  String? actorId)?  operation,TResult Function( String type,  String error)?  error,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String type,  String channel,  int? lastSyncedTimestamp)?  subscribe,TResult Function( String type,  Map<String, dynamic> data,  int timestamp,  String? actorId)?  operation,TResult Function( String type,  String error)?  error,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Subscribe() when subscribe != null:
-return subscribe(_that.type,_that.channel);case _Operation() when operation != null:
+return subscribe(_that.type,_that.channel,_that.lastSyncedTimestamp);case _Operation() when operation != null:
 return operation(_that.type,_that.data,_that.timestamp,_that.actorId);case _Error() when error != null:
 return error(_that.type,_that.error);case _:
   return orElse();
@@ -206,10 +206,10 @@ return error(_that.type,_that.error);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String type,  String channel)  subscribe,required TResult Function( String type,  Map<String, dynamic> data,  int timestamp,  String? actorId)  operation,required TResult Function( String type,  String error)  error,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String type,  String channel,  int? lastSyncedTimestamp)  subscribe,required TResult Function( String type,  Map<String, dynamic> data,  int timestamp,  String? actorId)  operation,required TResult Function( String type,  String error)  error,}) {final _that = this;
 switch (_that) {
 case _Subscribe():
-return subscribe(_that.type,_that.channel);case _Operation():
+return subscribe(_that.type,_that.channel,_that.lastSyncedTimestamp);case _Operation():
 return operation(_that.type,_that.data,_that.timestamp,_that.actorId);case _Error():
 return error(_that.type,_that.error);}
 }
@@ -225,10 +225,10 @@ return error(_that.type,_that.error);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String type,  String channel)?  subscribe,TResult? Function( String type,  Map<String, dynamic> data,  int timestamp,  String? actorId)?  operation,TResult? Function( String type,  String error)?  error,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String type,  String channel,  int? lastSyncedTimestamp)?  subscribe,TResult? Function( String type,  Map<String, dynamic> data,  int timestamp,  String? actorId)?  operation,TResult? Function( String type,  String error)?  error,}) {final _that = this;
 switch (_that) {
 case _Subscribe() when subscribe != null:
-return subscribe(_that.type,_that.channel);case _Operation() when operation != null:
+return subscribe(_that.type,_that.channel,_that.lastSyncedTimestamp);case _Operation() when operation != null:
 return operation(_that.type,_that.data,_that.timestamp,_that.actorId);case _Error() when error != null:
 return error(_that.type,_that.error);case _:
   return null;
@@ -242,11 +242,12 @@ return error(_that.type,_that.error);case _:
 @JsonSerializable()
 
 class _Subscribe implements ProtocolMessage {
-  const _Subscribe({required this.type, required this.channel, final  String? $type}): $type = $type ?? 'subscribe';
+  const _Subscribe({required this.type, required this.channel, this.lastSyncedTimestamp, final  String? $type}): $type = $type ?? 'subscribe';
   factory _Subscribe.fromJson(Map<String, dynamic> json) => _$SubscribeFromJson(json);
 
 @override final  String type;
  final  String channel;
+ final  int? lastSyncedTimestamp;
 
 @JsonKey(name: 'runtimeType')
 final String $type;
@@ -265,16 +266,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Subscribe&&(identical(other.type, type) || other.type == type)&&(identical(other.channel, channel) || other.channel == channel));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Subscribe&&(identical(other.type, type) || other.type == type)&&(identical(other.channel, channel) || other.channel == channel)&&(identical(other.lastSyncedTimestamp, lastSyncedTimestamp) || other.lastSyncedTimestamp == lastSyncedTimestamp));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,type,channel);
+int get hashCode => Object.hash(runtimeType,type,channel,lastSyncedTimestamp);
 
 @override
 String toString() {
-  return 'ProtocolMessage.subscribe(type: $type, channel: $channel)';
+  return 'ProtocolMessage.subscribe(type: $type, channel: $channel, lastSyncedTimestamp: $lastSyncedTimestamp)';
 }
 
 
@@ -285,7 +286,7 @@ abstract mixin class _$SubscribeCopyWith<$Res> implements $ProtocolMessageCopyWi
   factory _$SubscribeCopyWith(_Subscribe value, $Res Function(_Subscribe) _then) = __$SubscribeCopyWithImpl;
 @override @useResult
 $Res call({
- String type, String channel
+ String type, String channel, int? lastSyncedTimestamp
 });
 
 
@@ -302,11 +303,12 @@ class __$SubscribeCopyWithImpl<$Res>
 
 /// Create a copy of ProtocolMessage
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? type = null,Object? channel = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? type = null,Object? channel = null,Object? lastSyncedTimestamp = freezed,}) {
   return _then(_Subscribe(
 type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as String,channel: null == channel ? _self.channel : channel // ignore: cast_nullable_to_non_nullable
-as String,
+as String,lastSyncedTimestamp: freezed == lastSyncedTimestamp ? _self.lastSyncedTimestamp : lastSyncedTimestamp // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 

@@ -72,6 +72,8 @@ Future<PostgresCrdt> _getTenantCrdt(String tenantId) {
       start_date BIGINT,
       end_date BIGINT,
       parent_id TEXT,
+      last_updated BIGINT,
+      deleted_at BIGINT,
       hlc TEXT NOT NULL DEFAULT '',
       node_id TEXT NOT NULL DEFAULT '',
       modified TEXT NOT NULL DEFAULT '',
@@ -86,8 +88,10 @@ Future<PostgresCrdt> _getTenantCrdt(String tenantId) {
         // Ignore if column doesn't exist or is already renamed
       }
       try {
-        // Add if missing (for new tables or if rename failed/skipped)
+        // Add if missing
         await crdt.execute('ALTER TABLE "$tenantId".tasks ADD COLUMN IF NOT EXISTS gantt_type TEXT');
+        await crdt.execute('ALTER TABLE "$tenantId".tasks ADD COLUMN IF NOT EXISTS last_updated BIGINT');
+        await crdt.execute('ALTER TABLE "$tenantId".tasks ADD COLUMN IF NOT EXISTS deleted_at BIGINT');
       } catch (_) {}
 
       await crdt.execute('''
@@ -95,6 +99,8 @@ Future<PostgresCrdt> _getTenantCrdt(String tenantId) {
       predecessor_task_id TEXT NOT NULL,
       successor_task_id TEXT NOT NULL,
       dependency_type TEXT NOT NULL DEFAULT 'finishToStart',
+      last_updated BIGINT,
+      deleted_at BIGINT,
       hlc TEXT NOT NULL DEFAULT '',
       node_id TEXT NOT NULL DEFAULT '',
       modified TEXT NOT NULL DEFAULT '',
@@ -110,6 +116,11 @@ Future<PostgresCrdt> _getTenantCrdt(String tenantId) {
       } catch (_) {
         // Ignore if column doesn't exist or is already renamed
       }
+      try {
+        await crdt.execute('ALTER TABLE "$tenantId".dependencies ADD COLUMN IF NOT EXISTS dependency_type TEXT DEFAULT \'finishToStart\'');
+        await crdt.execute('ALTER TABLE "$tenantId".dependencies ADD COLUMN IF NOT EXISTS last_updated BIGINT');
+        await crdt.execute('ALTER TABLE "$tenantId".dependencies ADD COLUMN IF NOT EXISTS deleted_at BIGINT');
+      } catch (_) {}
 
       // Create resources table
       await crdt.execute('''
@@ -119,6 +130,8 @@ Future<PostgresCrdt> _getTenantCrdt(String tenantId) {
       parent_id TEXT,
       gantt_type TEXT,
       is_expanded BOOLEAN NOT NULL DEFAULT TRUE,
+      last_updated BIGINT,
+      deleted_at BIGINT,
       hlc TEXT NOT NULL DEFAULT '',
       node_id TEXT NOT NULL DEFAULT '',
       modified TEXT NOT NULL DEFAULT '',
@@ -126,12 +139,9 @@ Future<PostgresCrdt> _getTenantCrdt(String tenantId) {
     )
     ''');
       try {
-        // Add if missing
-        await crdt.execute('ALTER TABLE "$tenantId".dependencies ADD COLUMN IF NOT EXISTS dependency_type TEXT DEFAULT \'finishToStart\'');
-      } catch (_) {}
-
-      try {
         await crdt.execute('ALTER TABLE "$tenantId".resources ADD COLUMN IF NOT EXISTS gantt_type TEXT');
+        await crdt.execute('ALTER TABLE "$tenantId".resources ADD COLUMN IF NOT EXISTS last_updated BIGINT');
+        await crdt.execute('ALTER TABLE "$tenantId".resources ADD COLUMN IF NOT EXISTS deleted_at BIGINT');
       } catch (_) {}
 
       _tenantCrdts[tenantId] = crdt;
@@ -406,21 +416,26 @@ void main(List<String> args) async {
               await message.map(
                 subscribe: (msg) async {
                   final requestedChannel = msg.channel;
-                  JsonLogger.info('SUBSCRIBE_ATTEMPT', {'user_id': userId, 'tenant_id': tenantId, 'requested_channel': requestedChannel});
+                  final lastSynced = msg.lastSyncedTimestamp; // Delta Sync timestamp
+
+                  JsonLogger.info('SUBSCRIBE_ATTEMPT', {
+                    'user_id': userId,
+                    'tenant_id': tenantId,
+                    'requested_channel': requestedChannel,
+                    'last_synced': lastSynced,
+                  });
 
                   // STRICT TENANT ISOLATION
                   if (requestedChannel == tenantId) {
                     if (clientInfo.currentChannel != null) {
                       _channels[clientInfo.currentChannel]?.remove(channel);
-                      // If no more local clients, unsubscribe Redis?
-                      // Optional optimization.
                     }
 
                     clientInfo.currentChannel = requestedChannel;
                     final channelList = _channels.putIfAbsent(requestedChannel, () => []);
                     channelList.add(channel);
 
-                    // If this is the first client, subscribe Redis
+                    // If this is the first client, subscribe Redis (optimization)
                     if (channelList.length == 1) {
                       _redisPubSub?.subscribe([requestedChannel]);
                       JsonLogger.info('REDIS_SUBSCRIBE', {'channel': requestedChannel});
@@ -432,71 +447,98 @@ void main(List<String> args) async {
                     try {
                       final crdt = await _getTenantCrdt(tenantId);
 
+                      // Build partial query if delta sync
+                      String whereClause = '';
+                      if (lastSynced != null && lastSynced > 0) {
+                        whereClause = 'WHERE (last_updated > $lastSynced OR deleted_at > $lastSynced)';
+                        JsonLogger.info('DELTA_SYNC_QUERY', {'where': whereClause, 'lastSynced': lastSynced});
+                      } else {
+                        // Full load: ignore deleted, ignore timestamp
+                        whereClause = 'WHERE (is_deleted IS FALSE OR is_deleted = false)';
+                        JsonLogger.info('FULL_SYNC_QUERY', {'where': whereClause});
+                      }
+
                       // 1. Send Tasks
-                      final allTasks = await crdt.query('SELECT * FROM "$tenantId".tasks');
-                      for (final record in allTasks) {
-                        if (record['is_deleted'] == true || record['is_deleted'] == 1) continue;
+                      final tasks = await crdt.query('SELECT * FROM "$tenantId".tasks $whereClause');
+                      JsonLogger.info('SYNC_SENDING_TASKS', {'count': tasks.length, 'tenant_id': tenantId});
+                      for (final row in tasks) {
+                        final isDeleted = row['is_deleted'] == true || row['is_deleted'] == 1;
+                        // If full sync, we filtered deleted in SQL. If delta sync, we need to send deletions.
+                        // Check explicit deleted_at logic if available, or fallback to is_deleted.
 
                         final cleanData = {
-                          'id': record['id'],
-                          'name': record['name'],
-                          'start_date': record['start_date'],
-                          'end_date': record['end_date'],
-                          'parent_id': record['parent_id'],
-                          'gantt_type': record['gantt_type'], // Send gantt_type
-                          'type': record['gantt_type'], // Back-compat
-                          'ganttType': record['gantt_type'], // Back-compat
+                          'id': row['id']?.toString(),
+                          'name': row['name'],
+                          'start_date': row['start_date'],
+                          'end_date': row['end_date'],
+                          'parent_id': row['parent_id']?.toString(),
+                          'gantt_type': row['gantt_type'],
+                          'type': row['gantt_type'],
+                          'ganttType': row['gantt_type'],
                         };
                         final envelope = {
-                          'type': 'UPDATE_TASK',
-                          'data': {'data': cleanData, 'gantt_type': record['gantt_type']},
-                          'timestamp': DateTime.now().millisecondsSinceEpoch,
+                          'type': isDeleted ? 'DELETE_TASK' : 'UPDATE_TASK',
+                          'data': {'data': cleanData, 'gantt_type': row['gantt_type']},
+                          // If deleting, provide ID in data wrapper so client knows what to delete
+                          'timestamp': row['last_updated'] ?? DateTime.now().millisecondsSinceEpoch,
                           'actorId': 'server-sync',
                         };
+                        if (isDeleted) {
+                          // Ensure DELETE_TASK has correct structure for client
+                          envelope['data'] = {
+                            'data': {'id': row['id']?.toString()},
+                          };
+                        }
                         channel.sink.add(jsonEncode(envelope));
                       }
 
                       // 2. Send Dependencies
-                      final allDeps = await crdt.query('SELECT * FROM "$tenantId".dependencies');
+                      final allDeps = await crdt.query('SELECT * FROM "$tenantId".dependencies $whereClause');
                       for (final record in allDeps) {
-                        if (record['is_deleted'] == true || record['is_deleted'] == 1) continue;
+                        final isDeleted = (record['is_deleted'] == true || record['is_deleted'] == 1);
 
                         final cleanData = {
-                          'predecessorTaskId': record['predecessor_task_id'],
-                          'successorTaskId': record['successor_task_id'],
+                          'predecessorTaskId': record['predecessor_task_id']?.toString(),
+                          'successorTaskId': record['successor_task_id']?.toString(),
                           'type': record['dependency_type'],
                           'dependency_type': record['dependency_type'],
                           'dependencyType': record['dependency_type'],
                         };
                         final envelope = {
-                          'type': 'INSERT_DEPENDENCY',
+                          'type': isDeleted ? 'DELETE_DEPENDENCY' : 'INSERT_DEPENDENCY',
                           'data': {'data': cleanData},
-                          'timestamp': DateTime.now().millisecondsSinceEpoch,
+                          'timestamp': record['last_updated'] ?? DateTime.now().millisecondsSinceEpoch,
                           'actorId': 'server-sync',
                         };
                         channel.sink.add(jsonEncode(envelope));
                       }
 
                       // 3. Send Resources
-                      final allResources = await crdt.query('SELECT * FROM "$tenantId".resources');
+                      final allResources = await crdt.query('SELECT * FROM "$tenantId".resources $whereClause');
                       for (final record in allResources) {
-                        if (record['is_deleted'] == true || record['is_deleted'] == 1) continue;
+                        final isDeleted = (record['is_deleted'] == true || record['is_deleted'] == 1);
 
                         final cleanData = {
-                          'id': record['id'],
+                          'id': record['id']?.toString(),
                           'name': record['name'],
-                          'parentId': record['parent_id'],
-                          'parent_id': record['parent_id'],
+                          'parentId': record['parent_id']?.toString(),
+                          'parent_id': record['parent_id']?.toString(),
                           'isExpanded': record['is_expanded'],
                           'is_expanded': record['is_expanded'],
                           'gantt_type': record['gantt_type'],
                         };
                         final envelope = {
-                          'type': 'INSERT_RESOURCE',
+                          'type': isDeleted ? 'DELETE_RESOURCE' : 'INSERT_RESOURCE', // Assuming delete resource type exists
                           'data': {'data': cleanData},
-                          'timestamp': DateTime.now().millisecondsSinceEpoch,
+                          'timestamp': record['last_updated'] ?? DateTime.now().millisecondsSinceEpoch,
                           'actorId': 'server-sync',
                         };
+                        if (isDeleted) {
+                          envelope['type'] = 'DELETE_RESOURCE'; // Ensure type is correct
+                          envelope['data'] = {
+                            'data': {'id': record['id']?.toString()},
+                          };
+                        }
                         channel.sink.add(jsonEncode(envelope));
                       }
                     } catch (e) {
@@ -524,7 +566,6 @@ void main(List<String> args) async {
                       if (type == 'INSERT_DEPENDENCY') {
                         var data = msg.data['data'];
                         if (data != null && data['data'] != null && data['data'] is Map) {
-                          // Handle double nesting (data.data) which seems to be sent by tests/client
                           data = data['data'];
                         }
                         final pred = data['predecessorTaskId'];
@@ -532,8 +573,8 @@ void main(List<String> args) async {
                         final depType = data['dependency_type'] ?? data['dependencyType'] ?? data['type'] ?? 'finishToStart';
 
                         await crdt.execute(
-                          'INSERT INTO "${clientInfo.tenantId}".dependencies (predecessor_task_id, successor_task_id, dependency_type) VALUES (?, ?, ?) ON CONFLICT DO NOTHING',
-                          [pred, succ, depType],
+                          'INSERT INTO "${clientInfo.tenantId}".dependencies (predecessor_task_id, successor_task_id, dependency_type, last_updated) VALUES (?, ?, ?, ?) ON CONFLICT (predecessor_task_id, successor_task_id) DO UPDATE SET dependency_type = EXCLUDED.dependency_type, last_updated = EXCLUDED.last_updated, is_deleted = false, deleted_at = NULL',
+                          [pred, succ, depType, msg.timestamp],
                         );
                       } else if (type == 'DELETE_DEPENDENCY') {
                         var data = msg.data['data'];
@@ -543,10 +584,10 @@ void main(List<String> args) async {
                         final pred = data['predecessorTaskId'];
                         final succ = data['successorTaskId'];
 
-                        await crdt.execute('DELETE FROM "${clientInfo.tenantId}".dependencies WHERE predecessor_task_id = ? AND successor_task_id = ?', [
-                          pred,
-                          succ,
-                        ]);
+                        await crdt.execute(
+                          'UPDATE "${clientInfo.tenantId}".dependencies SET is_deleted = true, deleted_at = ?, last_updated = ? WHERE predecessor_task_id = ? AND successor_task_id = ?',
+                          [msg.timestamp, msg.timestamp, pred, succ],
+                        );
                       } else if (type == 'RESET_DATA') {
                         try {
                           await crdt.execute('DELETE FROM "${clientInfo.tenantId}".dependencies');
@@ -584,115 +625,94 @@ void main(List<String> args) async {
                         } catch (e) {
                           JsonLogger.error('RESET_FAILED', {'error': e.toString(), 'tenant_id': clientInfo.tenantId});
                         }
-                      } else if (type == 'UPDATE_TASK' || type == 'INSERT_TASK' || type == 'INSERT_RESOURCE') {
+                      } else if (type == 'UPDATE_TASK' || type == 'INSERT_TASK') {
                         final payload = msg.data;
-                        if (payload['data'] is Map) {
-                          final innerData = Map<String, dynamic>.from(payload['data'] as Map);
-
-                          if (innerData.containsKey('data') && innerData['data'] is Map) {
-                            final nestedData = Map<String, dynamic>.from(innerData['data'] as Map);
-                            innerData.addAll(nestedData);
-                          }
-
-                          if (!innerData.containsKey('gantt_type') && payload.containsKey('gantt_type')) {
-                            innerData['gantt_type'] = payload['gantt_type'];
-                          }
-
-                          String tableName = 'tasks';
-                          if (type == 'INSERT_RESOURCE') tableName = 'resources';
-                          final table = '"${clientInfo.tenantId}".$tableName';
-
-                          if (!innerData.containsKey('id')) {
-                            JsonLogger.error('MISSING_ID', {'payload': innerData});
-                            throw Exception('Missing ID');
-                          }
-
-                          final dbData = <String, dynamic>{};
-                          final keyMap = {
-                            'id': 'id',
-                            'name': 'name',
-                            'type': 'gantt_type',
-                            'ganttType': 'gantt_type',
-                            'gantt_type': 'gantt_type',
-                            'parentId': 'parent_id',
-                            'parentid': 'parent_id',
-                            'parent_id': 'parent_id',
-                            'startDate': 'start_date',
-                            'startdate': 'start_date',
-                            'start_date': 'start_date',
-                            'endDate': 'end_date',
-                            'enddate': 'end_date',
-                            'end_date': 'end_date',
-                            'isDeleted': 'is_deleted',
-                            'isdeleted': 'is_deleted',
-                            'is_deleted': 'is_deleted',
-                            'nodeId': 'node_id',
-                            'nodeid': 'node_id',
-                            'node_id': 'node_id',
-                            'modified': 'modified',
-                            'hlc': 'hlc',
-                            'isExpanded': 'is_expanded',
-                            'is_expanded': 'is_expanded',
-                          };
-
-                          innerData.forEach((k, v) {
-                            if (keyMap.containsKey(k)) {
-                              dbData[keyMap[k]!] = v;
-                            }
-                          });
-
-                          if (!dbData.containsKey('id')) {
-                            dbData['id'] = innerData['id'];
-                          }
-
-                          final columns = dbData.keys.join(', ');
-                          final placeholders = List.filled(dbData.length, '?').join(', ');
-                          final values = dbData.values.toList();
-                          final updates = dbData.keys.map((col) => '$col = EXCLUDED.$col').join(', ');
-
-                          await crdt.execute('INSERT INTO $table ($columns) VALUES ($placeholders) ON CONFLICT (id) DO UPDATE SET $updates', values);
+                        Map<String, dynamic>? innerData;
+                        if (payload.containsKey('data') && payload['data'] is Map) {
+                          innerData = Map<String, dynamic>.from(payload['data'] as Map);
+                        } else {
+                          innerData = payload;
                         }
-                      } else if (type == 'DELETE' || type == 'DELETE_TASK' || type == 'DELETE_RESOURCE') {
-                        final payload = msg.data;
-                        final innerData = payload['data'] as Map;
-                        final id = innerData['id'];
 
-                        String tableName = 'tasks';
-                        if (type == 'DELETE_RESOURCE') tableName = 'resources';
-                        final table = '"${clientInfo.tenantId}".$tableName';
+                        if (innerData != null && innerData['id'] != null) {
+                          final name = innerData['name'];
+                          final start = innerData['start_date'];
+                          final end = innerData['end_date'];
+                          final parent = innerData['parent_id'];
+                          final ganttType = innerData['gantt_type'] ?? innerData['type'] ?? 'task';
+
+                          await crdt.execute(
+                            '''
+                            INSERT INTO "${clientInfo.tenantId}".tasks (id, name, start_date, end_date, parent_id, gantt_type, last_updated)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                            ON CONFLICT (id) DO UPDATE SET
+                              name = EXCLUDED.name,
+                              start_date = EXCLUDED.start_date,
+                              end_date = EXCLUDED.end_date,
+                              parent_id = EXCLUDED.parent_id,
+                              gantt_type = EXCLUDED.gantt_type,
+                              last_updated = EXCLUDED.last_updated,
+                              is_deleted = false,
+                              deleted_at = NULL
+                            ''',
+                            [innerData['id'], name, start, end, parent, ganttType, msg.timestamp],
+                          );
+                        }
+                      } else if (type == 'INSERT_RESOURCE') {
+                        final payload = msg.data;
+                        Map<String, dynamic>? innerData;
+                        if (payload.containsKey('data') && payload['data'] is Map) {
+                          innerData = Map<String, dynamic>.from(payload['data'] as Map);
+                        } else {
+                          innerData = payload;
+                        }
+
+                        if (innerData != null && innerData['id'] != null) {
+                          final name = innerData['name'];
+                          final parent = innerData['parent_id'] ?? innerData['parentId'];
+                          final expanded = innerData['is_expanded'] ?? innerData['isExpanded'] ?? true;
+                          final ganttType = innerData['gantt_type'];
+
+                          await crdt.execute(
+                            '''
+                            INSERT INTO "${clientInfo.tenantId}".resources (id, name, parent_id, is_expanded, gantt_type, last_updated)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                            ON CONFLICT (id) DO UPDATE SET
+                              name = EXCLUDED.name,
+                              parent_id = EXCLUDED.parent_id,
+                              is_expanded = EXCLUDED.is_expanded,
+                              gantt_type = EXCLUDED.gantt_type,
+                              last_updated = EXCLUDED.last_updated,
+                              is_deleted = false,
+                              deleted_at = NULL
+                            ''',
+                            [innerData['id'], name, parent, expanded, ganttType, msg.timestamp],
+                          );
+                        }
+                      } else if (type == 'DELETE_TASK' || type == 'DELETE_RESOURCE') {
+                        // Removed generic 'DELETE' to be safer
+                        final payload = msg.data;
+                        Map<String, dynamic>? innerData;
+                        if (payload.containsKey('data') && payload['data'] is Map) {
+                          innerData = payload['data'] as Map<String, dynamic>;
+                        } else {
+                          innerData = payload;
+                        }
+
+                        final id = innerData != null ? innerData['id'] : null;
 
                         if (id != null) {
-                          await crdt.execute('UPDATE $table SET is_deleted = TRUE WHERE id = ?', [id]);
+                          String tableName = 'tasks';
+                          if (type == 'DELETE_RESOURCE') tableName = 'resources';
+                          final table = '"${clientInfo.tenantId}".$tableName';
+
+                          await crdt.execute('UPDATE $table SET is_deleted = true, deleted_at = ?, last_updated = ? WHERE id = ?', [
+                            msg.timestamp,
+                            msg.timestamp,
+                            id,
+                          ]);
                         }
                       } else if (type == 'CURSOR_MOVE') {
-                        // Just broadcast, do not persist
-                        final subscribers = _channels[currentChannel];
-                        if (subscribers != null) {
-                          final encoded = jsonEncode(msg.data);
-                          for (final client in subscribers) {
-                            if (client != channel) {
-                              client.sink.add(encoded);
-                            }
-                          }
-                        }
-                        // Skip the default broadcast logic at the end of the block to avoid double sending if we handled it here exclusively.
-                        // Actually, the block below handles broadcasting for everything EXCEPT RESET_DATA.
-                        // To avoid double logic, we can just do nothing here and let the fallthrough handle broadcast?
-                        // BUT, we need to ensure we DO NOT enter the DB write try/catch block below or any DB logic.
-                        // The current structure has DB logic mixed with broadcast.
-                        // Let's refactor slightly:
-                        // The DB logic is essentially inside the specific `if` blocks (INSERT, DELETE, etc).
-                        // So if we just have an empty block for CURSOR_MOVE, it will skip DB and fall through to broadcast.
-                        // However, the broadcast logic is at the end of the loop:
-                        /*
-                        // Broadcast to others
-                        if (type != 'RESET_DATA') {
-                           ...
-                        }
-                        */
-                        // So, effectively, handling it here is just about ensuring we don't error out.
-                        // Since there is no `else` block that throws (just an UNKNOWN_OPERATION log),
-                        // we can just let it fall through to the broadcast logic.
                         // However, to be explicit and avoid "UNKNOWN_OPERATION" log, we should have an empty block.
                       } else if (type == 'GHOST_UPDATE' || type == 'PRESENCE_UPDATE') {
                         // Just broadcast, do not persist.

@@ -9,6 +9,7 @@ part of 'models.dart';
 _Subscribe _$SubscribeFromJson(Map<String, dynamic> json) => _Subscribe(
   type: json['type'] as String,
   channel: json['channel'] as String,
+  lastSyncedTimestamp: (json['lastSyncedTimestamp'] as num?)?.toInt(),
   $type: json['runtimeType'] as String?,
 );
 
@@ -16,6 +17,7 @@ Map<String, dynamic> _$SubscribeToJson(_Subscribe instance) =>
     <String, dynamic>{
       'type': instance.type,
       'channel': instance.channel,
+      'lastSyncedTimestamp': instance.lastSyncedTimestamp,
       'runtimeType': instance.$type,
     };
 

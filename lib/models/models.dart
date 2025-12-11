@@ -5,7 +5,7 @@ part 'models.g.dart';
 
 @freezed
 sealed class ProtocolMessage with _$ProtocolMessage {
-  const factory ProtocolMessage.subscribe({required String type, required String channel}) = _Subscribe;
+  const factory ProtocolMessage.subscribe({required String type, required String channel, int? lastSyncedTimestamp}) = _Subscribe;
 
   const factory ProtocolMessage.operation({required String type, required Map<String, dynamic> data, required int timestamp, String? actorId}) = _Operation;
 
