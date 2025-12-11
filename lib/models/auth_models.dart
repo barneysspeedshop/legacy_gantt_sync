@@ -13,5 +13,11 @@ class User {
   final String tenantId;
   final bool isActive;
 
-  User({required this.id, required this.username, required this.role, required this.tenantId, required this.isActive});
+  User({
+    required this.id,
+    required this.username,
+    required this.role,
+    required this.tenantId,
+    required this.isActive,
+  });
 }

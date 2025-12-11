@@ -7,14 +7,21 @@ class PostgresApi extends DatabaseApi {
   PostgresApi(this._connection);
 
   @override
-  Future<void> execute(String sql, [List<Object?>? args]) => _connection.execute(sql.asQuery, parameters: args, ignoreRows: true);
+  Future<void> execute(String sql, [List<Object?>? args]) =>
+      _connection.execute(sql.asQuery, parameters: args, ignoreRows: true);
 
   @override
-  Future<List<Map<String, Object?>>> query(String sql, [List<Object?>? args]) async =>
-      (await _connection.execute(sql.asQuery, parameters: args)).map((e) => e.toColumnMap()).toList();
+  Future<List<Map<String, Object?>>> query(
+    String sql, [
+    List<Object?>? args,
+  ]) async => (await _connection.execute(
+    sql.asQuery,
+    parameters: args,
+  )).map((e) => e.toColumnMap()).toList();
 
   @override
-  Future<void> transaction(Future<void> Function(DatabaseApi txn) actions) => (_connection as SessionExecutor).runTx((t) => actions(PostgresApi(t)));
+  Future<void> transaction(Future<void> Function(DatabaseApi txn) actions) =>
+      (_connection as SessionExecutor).runTx((t) => actions(PostgresApi(t)));
 
   @override
   Future<void> executeBatch(Future<void> Function(WriteApi api) actions) async {

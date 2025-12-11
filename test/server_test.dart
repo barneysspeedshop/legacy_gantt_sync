@@ -24,7 +24,8 @@ void main() {
       body: jsonEncode({'username': 'superuser', 'password': 'superuser'}),
       headers: {'Content-Type': 'application/json'},
     );
-    if (superRes.statusCode != 200) throw Exception('Superuser login failed: ${superRes.body}');
+    if (superRes.statusCode != 200)
+      throw Exception('Superuser login failed: ${superRes.body}');
     final superToken = jsonDecode(superRes.body)['accessToken'];
 
     // 2. Register Tenant
@@ -35,8 +36,15 @@ void main() {
     // Ideally we just try to create.
     final createTenantRes = await http.post(
       Uri.parse('$httpUrl/api/admin/tenants'),
-      headers: {'Authorization': 'Bearer $superToken', 'Content-Type': 'application/json'},
-      body: jsonEncode({'tenantName': tName, 'adminUsername': 'temp_admin_${random.nextInt(10000)}', 'adminPassword': 'password'}),
+      headers: {
+        'Authorization': 'Bearer $superToken',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'tenantName': tName,
+        'adminUsername': 'temp_admin_${random.nextInt(10000)}',
+        'adminPassword': 'password',
+      }),
     );
 
     // If it fails, maybe it exists? If 200, we get ID.
@@ -47,7 +55,9 @@ void main() {
       // But the previous implementation threw exception.
       throw Exception('Create tenant failed: ${createTenantRes.body}');
     }
-    final String effectiveTenantId = jsonDecode(createTenantRes.body)['tenantId'];
+    final String effectiveTenantId = jsonDecode(
+      createTenantRes.body,
+    )['tenantId'];
 
     // 3. Create User in Tenant
     // Check if we are creating the initial admin or a regular user?
@@ -56,8 +66,15 @@ void main() {
     // But to be consistent with "registerAndLogin(username)", let's create a NEW user with that username.
     final createUserRes = await http.post(
       Uri.parse('$httpUrl/api/users'),
-      headers: {'Authorization': 'Bearer $superToken', 'Content-Type': 'application/json'},
-      body: jsonEncode({'username': username, 'password': 'password', 'tenantId': effectiveTenantId}),
+      headers: {
+        'Authorization': 'Bearer $superToken',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'username': username,
+        'password': 'password',
+        'tenantId': effectiveTenantId,
+      }),
     );
     if (createUserRes.statusCode != 200) {
       // If user already exists (e.g. we passed the admin username?), just proceed to login
@@ -83,7 +100,10 @@ void main() {
   // The original test passed an ADMIN token.
   // Now only superuser can create users for ANY tenant, OR admin for OWN tenant.
   // If `adminToken` is a tenant admin, it works for that tenant.
-  Future<String> registerUserInTenant(String adminToken, String username) async {
+  Future<String> registerUserInTenant(
+    String adminToken,
+    String username,
+  ) async {
     // We need to know tenantId to create user via API if we are using superuser token,
     // OR if we are using tenant admin token, context implies it.
     // The endpoint `POST /api/users` requires `tenantId` in body if superuser,
@@ -122,15 +142,25 @@ void main() {
     // Now we need it.
     // We can extract it from the `adminToken` passed in?
     final parts = adminToken.split('.');
-    final payload = jsonDecode(utf8.decode(base64.decode(base64.normalize(parts[1]))));
+    final payload = jsonDecode(
+      utf8.decode(base64.decode(base64.normalize(parts[1]))),
+    );
     final tId = payload['tenant_id'];
 
     final res = await http.post(
       Uri.parse('$httpUrl/api/users'),
-      headers: {'Authorization': 'Bearer $superToken', 'Content-Type': 'application/json'},
-      body: jsonEncode({'username': username, 'password': 'password', 'tenantId': tId}),
+      headers: {
+        'Authorization': 'Bearer $superToken',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'username': username,
+        'password': 'password',
+        'tenantId': tId,
+      }),
     );
-    if (res.statusCode != 200) throw Exception('Create user failed: ${res.body}');
+    if (res.statusCode != 200)
+      throw Exception('Create user failed: ${res.body}');
 
     // Login as new user
     final loginRes = await http.post(
@@ -161,33 +191,40 @@ void main() {
     );
 
     // Listen to stdout to capture the port
-    serverProcess!.stdout.transform(utf8.decoder).transform(const LineSplitter()).listen((line) {
-      print('[Server Out] $line');
-      if (!portCompleter.isCompleted) {
-        try {
-          // Look for JSON log with event SERVER_START
-          // The line might be wrapped or have prefixes?
-          // Assuming pure JSON per line or simple text search for now
-          // Example: {"...":"SERVER_START", "data":{..."port":12345}}
-          if (line.contains('SERVER_START')) {
-            final json = jsonDecode(line);
-            if (json['event'] == 'SERVER_START') {
-              final data = json['data'];
-              final actualPort = data['port'] as int;
-              portCompleter.complete(actualPort);
+    serverProcess!.stdout
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((line) {
+          print('[Server Out] $line');
+          if (!portCompleter.isCompleted) {
+            try {
+              // Look for JSON log with event SERVER_START
+              // The line might be wrapped or have prefixes?
+              // Assuming pure JSON per line or simple text search for now
+              // Example: {"...":"SERVER_START", "data":{..."port":12345}}
+              if (line.contains('SERVER_START')) {
+                final json = jsonDecode(line);
+                if (json['event'] == 'SERVER_START') {
+                  final data = json['data'];
+                  final actualPort = data['port'] as int;
+                  portCompleter.complete(actualPort);
+                }
+              }
+            } catch (e) {
+              // Ignore parsing errors
             }
           }
-        } catch (e) {
-          // Ignore parsing errors
-        }
-      }
-    });
+        });
 
-    serverProcess!.stderr.transform(utf8.decoder).listen((line) => print('[Server Err] $line'));
+    serverProcess!.stderr
+        .transform(utf8.decoder)
+        .listen((line) => print('[Server Err] $line'));
 
     // Wait for the port to be captured
     try {
-      final actualPort = await portCompleter.future.timeout(const Duration(seconds: 10));
+      final actualPort = await portCompleter.future.timeout(
+        const Duration(seconds: 10),
+      );
       print('Test Server started on port $actualPort');
       wsUrl = 'ws://localhost:$actualPort/ws';
       httpUrl = 'http://localhost:$actualPort';
@@ -205,7 +242,13 @@ void main() {
   });
 
   test('Rejects invalid token', () async {
-    expect(WebSocket.connect(wsUrl, headers: {'Authorization': 'Bearer invalid_token'}), throwsA(isA<WebSocketException>()));
+    expect(
+      WebSocket.connect(
+        wsUrl,
+        headers: {'Authorization': 'Bearer invalid_token'},
+      ),
+      throwsA(isA<WebSocketException>()),
+    );
   });
 
   // test('Server broadcasts messages to clients in same tenant', () async {
@@ -276,14 +319,24 @@ void main() {
   test('Isolates messages between tenants', () async {
     final t1User = 't1_${random.nextInt(10000)}';
     final tokenA = await registerAndLogin(t1User);
-    final t1Id = jsonDecode(utf8.decode(base64.decode(base64.normalize(tokenA.split('.')[1]))))['tenant_id'];
+    final t1Id = jsonDecode(
+      utf8.decode(base64.decode(base64.normalize(tokenA.split('.')[1]))),
+    )['tenant_id'];
 
     final t2User = 't2_${random.nextInt(10000)}';
     final tokenB = await registerAndLogin(t2User); // Different tenant
-    final t2Id = jsonDecode(utf8.decode(base64.decode(base64.normalize(tokenB.split('.')[1]))))['tenant_id'];
+    final t2Id = jsonDecode(
+      utf8.decode(base64.decode(base64.normalize(tokenB.split('.')[1]))),
+    )['tenant_id'];
 
-    final clientA = IOWebSocketChannel.connect(wsUrl, headers: {'Authorization': 'Bearer $tokenA'});
-    final clientB = IOWebSocketChannel.connect(wsUrl, headers: {'Authorization': 'Bearer $tokenB'});
+    final clientA = IOWebSocketChannel.connect(
+      wsUrl,
+      headers: {'Authorization': 'Bearer $tokenA'},
+    );
+    final clientB = IOWebSocketChannel.connect(
+      wsUrl,
+      headers: {'Authorization': 'Bearer $tokenB'},
+    );
 
     clientA.sink.add(jsonEncode({'type': 'subscribe', 'channel': t1Id}));
     clientB.sink.add(jsonEncode({'type': 'subscribe', 'channel': t2Id}));
@@ -303,7 +356,9 @@ void main() {
     // User B should NOT receive it
     bool foundSecret = false;
     try {
-      final event = await bQueue.next.timeout(const Duration(milliseconds: 500));
+      final event = await bQueue.next.timeout(
+        const Duration(milliseconds: 500),
+      );
       final decoded = jsonDecode(event as String);
       if (decoded['data']?['id'] == 'secret_task') {
         foundSecret = true;
@@ -322,11 +377,16 @@ void main() {
     final user = 'cross_${random.nextInt(10000)}';
     final token = await registerAndLogin(user);
 
-    final clientA = IOWebSocketChannel.connect(wsUrl, headers: {'Authorization': 'Bearer $token'});
+    final clientA = IOWebSocketChannel.connect(
+      wsUrl,
+      headers: {'Authorization': 'Bearer $token'},
+    );
     final queue = StreamQueue(clientA.stream);
 
     // Try to subscribe to DIFFERENT channel (just random string)
-    clientA.sink.add(jsonEncode({'type': 'subscribe', 'channel': 'some_other_tenant'}));
+    clientA.sink.add(
+      jsonEncode({'type': 'subscribe', 'channel': 'some_other_tenant'}),
+    );
 
     // Expect error message
     bool receivedError = false;
@@ -347,9 +407,14 @@ void main() {
   test('New client receives history for their tenant only', () async {
     final historyUser = 'hist_${random.nextInt(10000)}';
     final token = await registerAndLogin(historyUser);
-    final tenantId = jsonDecode(utf8.decode(base64.decode(base64.normalize(token.split('.')[1]))))['tenant_id'];
+    final tenantId = jsonDecode(
+      utf8.decode(base64.decode(base64.normalize(token.split('.')[1]))),
+    )['tenant_id'];
 
-    final clientA = IOWebSocketChannel.connect(wsUrl, headers: {'Authorization': 'Bearer $token'});
+    final clientA = IOWebSocketChannel.connect(
+      wsUrl,
+      headers: {'Authorization': 'Bearer $token'},
+    );
 
     clientA.sink.add(jsonEncode({'type': 'subscribe', 'channel': tenantId}));
     await Future.delayed(const Duration(milliseconds: 100));
@@ -365,11 +430,16 @@ void main() {
     };
 
     clientA.sink.add(jsonEncode(message));
-    await Future.delayed(const Duration(milliseconds: 1000)); // Wait for DB write
+    await Future.delayed(
+      const Duration(milliseconds: 1000),
+    ); // Wait for DB write
 
     // New client (same user for simplicity, or new user in same tenant)
     // Same token/user is fine for history check
-    final clientB = IOWebSocketChannel.connect(wsUrl, headers: {'Authorization': 'Bearer $token'});
+    final clientB = IOWebSocketChannel.connect(
+      wsUrl,
+      headers: {'Authorization': 'Bearer $token'},
+    );
     final bQueue = StreamQueue(clientB.stream);
 
     clientB.sink.add(jsonEncode({'type': 'subscribe', 'channel': tenantId}));
@@ -397,10 +467,18 @@ void main() {
   test('Syncs dependencies between clients', () async {
     final depUser = 'dep_${random.nextInt(10000)}';
     final token = await registerAndLogin(depUser);
-    final tenantId = jsonDecode(utf8.decode(base64.decode(base64.normalize(token.split('.')[1]))))['tenant_id'];
+    final tenantId = jsonDecode(
+      utf8.decode(base64.decode(base64.normalize(token.split('.')[1]))),
+    )['tenant_id'];
 
-    final clientA = IOWebSocketChannel.connect(wsUrl, headers: {'Authorization': 'Bearer $token'});
-    final clientB = IOWebSocketChannel.connect(wsUrl, headers: {'Authorization': 'Bearer $token'});
+    final clientA = IOWebSocketChannel.connect(
+      wsUrl,
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    final clientB = IOWebSocketChannel.connect(
+      wsUrl,
+      headers: {'Authorization': 'Bearer $token'},
+    );
 
     clientA.sink.add(jsonEncode({'type': 'subscribe', 'channel': tenantId}));
     clientB.sink.add(jsonEncode({'type': 'subscribe', 'channel': tenantId}));
@@ -409,7 +487,11 @@ void main() {
     final bQueue = StreamQueue(clientB.stream);
 
     // 1. Insert Dependency
-    final depData = {'predecessorTaskId': 'task1', 'successorTaskId': 'task2', 'type': 'finishToStart'};
+    final depData = {
+      'predecessorTaskId': 'task1',
+      'successorTaskId': 'task2',
+      'type': 'finishToStart',
+    };
     clientA.sink.add(
       jsonEncode({
         'type': 'INSERT_DEPENDENCY',
@@ -424,7 +506,8 @@ void main() {
       while (await bQueue.hasNext) {
         final rawMsg = await bQueue.next.timeout(const Duration(seconds: 2));
         final decoded = jsonDecode(rawMsg as String);
-        if (decoded['type'] == 'INSERT_DEPENDENCY' && decoded['data']['data']['predecessorTaskId'] == 'task1') {
+        if (decoded['type'] == 'INSERT_DEPENDENCY' &&
+            decoded['data']['data']['predecessorTaskId'] == 'task1') {
           foundInsert = true;
           break;
         }
@@ -432,7 +515,11 @@ void main() {
     } catch (e) {
       // Timeout
     }
-    expect(foundInsert, isTrue, reason: 'Client B should receive INSERT_DEPENDENCY');
+    expect(
+      foundInsert,
+      isTrue,
+      reason: 'Client B should receive INSERT_DEPENDENCY',
+    );
 
     // 2. Delete Dependency
     clientA.sink.add(
@@ -449,7 +536,8 @@ void main() {
       while (await bQueue.hasNext) {
         final event = await bQueue.next.timeout(const Duration(seconds: 2));
         final decoded = jsonDecode(event as String);
-        if (decoded['type'] == 'DELETE_DEPENDENCY' && decoded['data']['data']['predecessorTaskId'] == 'task1') {
+        if (decoded['type'] == 'DELETE_DEPENDENCY' &&
+            decoded['data']['data']['predecessorTaskId'] == 'task1') {
           foundDelete = true;
           break;
         }
@@ -457,7 +545,11 @@ void main() {
     } catch (e) {
       // Timeout
     }
-    expect(foundDelete, isTrue, reason: 'Client B should receive DELETE_DEPENDENCY');
+    expect(
+      foundDelete,
+      isTrue,
+      reason: 'Client B should receive DELETE_DEPENDENCY',
+    );
 
     await clientA.sink.close();
     await clientB.sink.close();
@@ -469,13 +561,23 @@ void main() {
     // or just checking that the final state is correct.
     // Let's add another dependency and leave it there.
 
-    final clientC = IOWebSocketChannel.connect(wsUrl, headers: {'Authorization': 'Bearer $token'});
+    final clientC = IOWebSocketChannel.connect(
+      wsUrl,
+      headers: {'Authorization': 'Bearer $token'},
+    );
     // final cQueue = StreamQueue(clientC.stream);
     clientC.sink.add(jsonEncode({'type': 'subscribe', 'channel': tenantId}));
 
     // Insert another one
-    final depData2 = {'predecessorTaskId': 'task3', 'successorTaskId': 'task4', 'type': 'startToStart'};
-    final clientD = IOWebSocketChannel.connect(wsUrl, headers: {'Authorization': 'Bearer $token'});
+    final depData2 = {
+      'predecessorTaskId': 'task3',
+      'successorTaskId': 'task4',
+      'type': 'startToStart',
+    };
+    final clientD = IOWebSocketChannel.connect(
+      wsUrl,
+      headers: {'Authorization': 'Bearer $token'},
+    );
     clientD.sink.add(jsonEncode({'type': 'subscribe', 'channel': tenantId}));
     await Future.delayed(const Duration(milliseconds: 200));
 
@@ -489,7 +591,10 @@ void main() {
     await Future.delayed(const Duration(milliseconds: 500)); // Wait for DB
 
     // New client E should receive it in history (on subscribe)
-    final clientE = IOWebSocketChannel.connect(wsUrl, headers: {'Authorization': 'Bearer $token'});
+    final clientE = IOWebSocketChannel.connect(
+      wsUrl,
+      headers: {'Authorization': 'Bearer $token'},
+    );
     final eQueue = StreamQueue(clientE.stream);
     clientE.sink.add(jsonEncode({'type': 'subscribe', 'channel': tenantId}));
 
@@ -498,7 +603,8 @@ void main() {
       while (await eQueue.hasNext) {
         final event = await eQueue.next.timeout(const Duration(seconds: 2));
         final decoded = jsonDecode(event as String);
-        if (decoded['type'] == 'INSERT_DEPENDENCY' && decoded['data']['data']['predecessorTaskId'] == 'task3') {
+        if (decoded['type'] == 'INSERT_DEPENDENCY' &&
+            decoded['data']['data']['predecessorTaskId'] == 'task3') {
           foundHistory = true;
           break;
         }
@@ -506,7 +612,11 @@ void main() {
     } catch (e) {
       // Timeout
     }
-    expect(foundHistory, isTrue, reason: 'New client should receive persisted dependencies');
+    expect(
+      foundHistory,
+      isTrue,
+      reason: 'New client should receive persisted dependencies',
+    );
 
     await clientC.sink.close();
     await clientD.sink.close();
@@ -520,7 +630,10 @@ void main() {
     final token = await registerAndLogin(username, tenantId: tenantId);
 
     // 1. Connect Client 1
-    final client1 = IOWebSocketChannel.connect(wsUrl, headers: {'Authorization': 'Bearer $token'});
+    final client1 = IOWebSocketChannel.connect(
+      wsUrl,
+      headers: {'Authorization': 'Bearer $token'},
+    );
     client1.sink.add(jsonEncode({'type': 'subscribe', 'channel': tenantId}));
 
     // Wait for subscribe success
@@ -533,7 +646,11 @@ void main() {
     final updateMsg = {
       'type': 'UPDATE_TASK',
       'data': {
-        'data': {'id': 'task-type-test', 'name': 'Milestone Task', 'type': 'milestone'},
+        'data': {
+          'id': 'task-type-test',
+          'name': 'Milestone Task',
+          'type': 'milestone',
+        },
       },
       'timestamp': DateTime.now().millisecondsSinceEpoch,
       'actorId': 'user_type_test',
@@ -543,7 +660,10 @@ void main() {
     await client1.sink.close();
 
     // 3. New client connects, should receive task with type
-    final client2 = IOWebSocketChannel.connect(wsUrl, headers: {'Authorization': 'Bearer $token'});
+    final client2 = IOWebSocketChannel.connect(
+      wsUrl,
+      headers: {'Authorization': 'Bearer $token'},
+    );
     final queue = StreamQueue(client2.stream);
     client2.sink.add(jsonEncode({'type': 'subscribe', 'channel': tenantId}));
 
@@ -553,7 +673,8 @@ void main() {
       while (await queue.hasNext) {
         final event = await queue.next.timeout(const Duration(seconds: 2));
         final msg = jsonDecode(event as String);
-        if (msg['type'] == 'UPDATE_TASK' && msg['data']['data']['id'] == 'task-type-test') {
+        if (msg['type'] == 'UPDATE_TASK' &&
+            msg['data']['data']['id'] == 'task-type-test') {
           // Check for 'gantt_type' or 'ganttType' or 'type' mapped correctly.
           // Since we query DB columns, it will likely come back as 'gantt_type' if we used SELECT *
           // But our current implementation sends raw JSON from DB. `postgres` returns keys as column names.
@@ -567,7 +688,11 @@ void main() {
     } catch (_) {
       // End of stream or timeout
     }
-    expect(found, isTrue, reason: 'Task with gantt_type should be persisted and sent to new client');
+    expect(
+      found,
+      isTrue,
+      reason: 'Task with gantt_type should be persisted and sent to new client',
+    );
     await client2.sink.close();
   });
 
@@ -576,7 +701,10 @@ void main() {
     final username = 'user_mapping_test_${random.nextInt(10000)}';
     final token = await registerAndLogin(username, tenantId: tenantId);
 
-    final client1 = IOWebSocketChannel.connect(wsUrl, headers: {'Authorization': 'Bearer $token'});
+    final client1 = IOWebSocketChannel.connect(
+      wsUrl,
+      headers: {'Authorization': 'Bearer $token'},
+    );
     client1.sink.add(jsonEncode({'type': 'subscribe', 'channel': tenantId}));
 
     // Wait for subscribe success
@@ -589,7 +717,13 @@ void main() {
     final updateMsg = {
       'type': 'UPDATE_TASK',
       'data': {
-        'data': {'id': 'task-mapping-test', 'name': 'Mapping Task', 'parentId': 'parent-task-1', 'startDate': 1000, 'endDate': 2000},
+        'data': {
+          'id': 'task-mapping-test',
+          'name': 'Mapping Task',
+          'parentId': 'parent-task-1',
+          'startDate': 1000,
+          'endDate': 2000,
+        },
       },
       'timestamp': DateTime.now().millisecondsSinceEpoch,
       'actorId': 'user_mapping_test',
@@ -599,7 +733,10 @@ void main() {
     await client1.sink.close();
 
     // Verify persistence via new connection
-    final client2 = IOWebSocketChannel.connect(wsUrl, headers: {'Authorization': 'Bearer $token'});
+    final client2 = IOWebSocketChannel.connect(
+      wsUrl,
+      headers: {'Authorization': 'Bearer $token'},
+    );
     final queue = StreamQueue(client2.stream);
     client2.sink.add(jsonEncode({'type': 'subscribe', 'channel': tenantId}));
 
@@ -608,7 +745,8 @@ void main() {
       while (await queue.hasNext) {
         final event = await queue.next.timeout(const Duration(seconds: 2));
         final msg = jsonDecode(event as String);
-        if (msg['type'] == 'UPDATE_TASK' && msg['data']['data']['id'] == 'task-mapping-test') {
+        if (msg['type'] == 'UPDATE_TASK' &&
+            msg['data']['data']['id'] == 'task-mapping-test') {
           // Check that fields were saved (server returns them as is or mapped - likely returns what fits schema)
           // Actually, our current logic broadcasts the ORIGINAL payload immediately, merging later?
           // No, subscribe sends from DB. So we expect `parent_id` from DB or snake_case keys.
@@ -616,7 +754,8 @@ void main() {
           // BUT, `row_to_json` or simple query returns DB columns.
           // Let's check what came back.
           final data = msg['data']['data'];
-          if (data['parent_id'] == 'parent-task-1' || data['parentId'] == 'parent-task-1') {
+          if (data['parent_id'] == 'parent-task-1' ||
+              data['parentId'] == 'parent-task-1') {
             found = true;
           }
           break;
@@ -632,7 +771,10 @@ void main() {
     final username = 'user_resource_test_${random.nextInt(10000)}';
     final token = await registerAndLogin(username, tenantId: tenantId);
 
-    final client1 = IOWebSocketChannel.connect(wsUrl, headers: {'Authorization': 'Bearer $token'});
+    final client1 = IOWebSocketChannel.connect(
+      wsUrl,
+      headers: {'Authorization': 'Bearer $token'},
+    );
     client1.sink.add(jsonEncode({'type': 'subscribe', 'channel': tenantId}));
 
     // Wait for subscribe success
@@ -657,7 +799,10 @@ void main() {
     await client1.sink.close();
 
     // Verify persistence
-    final client2 = IOWebSocketChannel.connect(wsUrl, headers: {'Authorization': 'Bearer $token'});
+    final client2 = IOWebSocketChannel.connect(
+      wsUrl,
+      headers: {'Authorization': 'Bearer $token'},
+    );
     final queue = StreamQueue(client2.stream);
     client2.sink.add(jsonEncode({'type': 'subscribe', 'channel': tenantId}));
 
@@ -667,7 +812,9 @@ void main() {
         final event = await queue.next.timeout(const Duration(seconds: 2));
         final msg = jsonDecode(event as String);
         // Expect INSERT_RESOURCE or UPDATE_TASK depending on what we sent. Server reflects checks.
-        if ((msg['type'] == 'UPDATE_TASK' || msg['type'] == 'INSERT_RESOURCE') && msg['data']['data']['id'] == 'resource-test-1') {
+        if ((msg['type'] == 'UPDATE_TASK' ||
+                msg['type'] == 'INSERT_RESOURCE') &&
+            msg['data']['data']['id'] == 'resource-test-1') {
           final data = msg['data']['data'];
           if (data['gantt_type'] == 'human') {
             found = true;
@@ -676,7 +823,11 @@ void main() {
         }
       }
     } catch (_) {}
-    expect(found, isTrue, reason: 'INSERT_RESOURCE with root gantt_type should be persisted');
+    expect(
+      found,
+      isTrue,
+      reason: 'INSERT_RESOURCE with root gantt_type should be persisted',
+    );
     await client2.sink.close();
   });
 
@@ -685,7 +836,10 @@ void main() {
     final username = 'user_nested_test_${random.nextInt(10000)}';
     final token = await registerAndLogin(username, tenantId: tenantId);
 
-    final client1 = IOWebSocketChannel.connect(wsUrl, headers: {'Authorization': 'Bearer $token'});
+    final client1 = IOWebSocketChannel.connect(
+      wsUrl,
+      headers: {'Authorization': 'Bearer $token'},
+    );
     client1.sink.add(jsonEncode({'type': 'subscribe', 'channel': tenantId}));
 
     // Wait for subscribe success
@@ -710,7 +864,10 @@ void main() {
     await client1.sink.close();
 
     // Verify persistence
-    final client2 = IOWebSocketChannel.connect(wsUrl, headers: {'Authorization': 'Bearer $token'});
+    final client2 = IOWebSocketChannel.connect(
+      wsUrl,
+      headers: {'Authorization': 'Bearer $token'},
+    );
     final queue = StreamQueue(client2.stream);
     client2.sink.add(jsonEncode({'type': 'subscribe', 'channel': tenantId}));
 
@@ -719,16 +876,23 @@ void main() {
       while (await queue.hasNext) {
         final event = await queue.next.timeout(const Duration(seconds: 2));
         final msg = jsonDecode(event as String);
-        if ((msg['type'] == 'UPDATE_TASK' || msg['type'] == 'INSERT_RESOURCE') && msg['data']['data']['id'] == 'nested-resource-1') {
+        if ((msg['type'] == 'UPDATE_TASK' ||
+                msg['type'] == 'INSERT_RESOURCE') &&
+            msg['data']['data']['id'] == 'nested-resource-1') {
           final data = msg['data']['data'];
-          if (data['gantt_type'] == 'tool' && data['name'] == 'Nested Resource') {
+          if (data['gantt_type'] == 'tool' &&
+              data['name'] == 'Nested Resource') {
             found = true;
           }
           break;
         }
       }
     } catch (_) {}
-    expect(found, isTrue, reason: 'Nested payload should be unwrapped and persisted');
+    expect(
+      found,
+      isTrue,
+      reason: 'Nested payload should be unwrapped and persisted',
+    );
     await client2.sink.close();
   });
 
@@ -737,7 +901,10 @@ void main() {
     final username = 'user_dep_type_${random.nextInt(10000)}';
     final token = await registerAndLogin(username, tenantId: tenantId);
 
-    final client1 = IOWebSocketChannel.connect(wsUrl, headers: {'Authorization': 'Bearer $token'});
+    final client1 = IOWebSocketChannel.connect(
+      wsUrl,
+      headers: {'Authorization': 'Bearer $token'},
+    );
     client1.sink.add(jsonEncode({'type': 'subscribe', 'channel': tenantId}));
 
     // Wait for subscribe success
@@ -751,7 +918,11 @@ void main() {
       jsonEncode({
         'type': 'INSERT_DEPENDENCY',
         'data': {
-          'data': {'predecessorTaskId': 'task-a', 'successorTaskId': 'task-b', 'dependency_type': 'startToStart'},
+          'data': {
+            'predecessorTaskId': 'task-a',
+            'successorTaskId': 'task-b',
+            'dependency_type': 'startToStart',
+          },
         },
         'timestamp': DateTime.now().millisecondsSinceEpoch,
         'actorId': 'user_dep_type_${random.nextInt(10000)}@$tenantId',
@@ -761,7 +932,10 @@ void main() {
     await client1.sink.close();
 
     // Verify persistence via new connection
-    final client2 = IOWebSocketChannel.connect(wsUrl, headers: {'Authorization': 'Bearer $token'});
+    final client2 = IOWebSocketChannel.connect(
+      wsUrl,
+      headers: {'Authorization': 'Bearer $token'},
+    );
     final queue = StreamQueue(client2.stream);
     client2.sink.add(jsonEncode({'type': 'subscribe', 'channel': tenantId}));
 
@@ -774,14 +948,19 @@ void main() {
           final data = msg['data']['data'];
           if (data['predecessorTaskId'] == 'task-a' &&
               data['successorTaskId'] == 'task-b' &&
-              (data['dependency_type'] == 'startToStart' || data['type'] == 'startToStart')) {
+              (data['dependency_type'] == 'startToStart' ||
+                  data['type'] == 'startToStart')) {
             found = true;
             break;
           }
         }
       }
     } catch (_) {}
-    expect(found, isTrue, reason: 'Dependency with dependencyType should be persisted');
+    expect(
+      found,
+      isTrue,
+      reason: 'Dependency with dependencyType should be persisted',
+    );
     await client2.sink.close();
   });
 
@@ -791,9 +970,14 @@ void main() {
     final token = await registerAndLogin(username, tenantId: tenantId);
 
     // 1. Setup Data (Task + Dependency)
-    final client1 = IOWebSocketChannel.connect(wsUrl, headers: {'Authorization': 'Bearer $token'});
+    final client1 = IOWebSocketChannel.connect(
+      wsUrl,
+      headers: {'Authorization': 'Bearer $token'},
+    );
     client1.sink.add(jsonEncode({'type': 'subscribe', 'channel': tenantId}));
-    await client1.stream.firstWhere((e) => jsonDecode(e as String)['type'] == 'SUBSCRIBE_SUCCESS');
+    await client1.stream.firstWhere(
+      (e) => jsonDecode(e as String)['type'] == 'SUBSCRIBE_SUCCESS',
+    );
 
     // Create Task
     client1.sink.add(
@@ -814,7 +998,10 @@ void main() {
       jsonEncode({
         'type': 'INSERT_DEPENDENCY',
         'data': {
-          'data': {'predecessorTaskId': 'task-reset-1', 'successorTaskId': 'task-reset-2'},
+          'data': {
+            'predecessorTaskId': 'task-reset-1',
+            'successorTaskId': 'task-reset-2',
+          },
         },
         'timestamp': DateTime.now().millisecondsSinceEpoch,
         'actorId': 'dep_${random.nextInt(10000)}',
@@ -823,13 +1010,23 @@ void main() {
     await Future.delayed(const Duration(milliseconds: 200));
 
     // 2. Send RESET_DATA
-    client1.sink.add(jsonEncode({'type': 'RESET_DATA', 'data': {}, 'timestamp': DateTime.now().millisecondsSinceEpoch, 'actorId': 'user_reset'}));
+    client1.sink.add(
+      jsonEncode({
+        'type': 'RESET_DATA',
+        'data': {},
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'actorId': 'user_reset',
+      }),
+    );
     await Future.delayed(const Duration(milliseconds: 200));
 
     // 2. Setup Client 2 (Observer - Different User)
     final observerUsername = 'user_reset_obs_${random.nextInt(10000)}';
     final observerToken = await registerUserInTenant(token, observerUsername);
-    final client2 = IOWebSocketChannel.connect(wsUrl, headers: {'Authorization': 'Bearer $observerToken'});
+    final client2 = IOWebSocketChannel.connect(
+      wsUrl,
+      headers: {'Authorization': 'Bearer $observerToken'},
+    );
     final queue2 = StreamQueue(client2.stream);
     client2.sink.add(jsonEncode({'type': 'subscribe', 'channel': tenantId}));
     await queue2.next; // SUBSCRIBE_SUCCESS
@@ -838,7 +1035,14 @@ void main() {
     // We also want to verify Client 1 DOES NOT receive the broadcast
     final queue1 = StreamQueue(client1.stream);
 
-    client1.sink.add(jsonEncode({'type': 'RESET_DATA', 'data': {}, 'timestamp': DateTime.now().millisecondsSinceEpoch, 'actorId': 'user_reset'}));
+    client1.sink.add(
+      jsonEncode({
+        'type': 'RESET_DATA',
+        'data': {},
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'actorId': 'user_reset',
+      }),
+    );
 
     // 4. Verify Client 2 receives RESET_DATA
     bool resetReceived2 = false;
@@ -852,7 +1056,11 @@ void main() {
         }
       }
     } catch (_) {}
-    expect(resetReceived2, isTrue, reason: 'Client 2 should receive RESET_DATA broadcast');
+    expect(
+      resetReceived2,
+      isTrue,
+      reason: 'Client 2 should receive RESET_DATA broadcast',
+    );
 
     // 5. Verify Client 1 DOES NOT receive RESET_DATA
     bool resetReceived1 = false;
@@ -866,13 +1074,20 @@ void main() {
     } catch (e) {
       // Timeout expected if no message received
     }
-    expect(resetReceived1, isFalse, reason: 'Client 1 should NOT receive self-broadcast');
+    expect(
+      resetReceived1,
+      isFalse,
+      reason: 'Client 1 should NOT receive self-broadcast',
+    );
 
     await client1.sink.close();
 
     // 5. Verify Empty State (Optional, already checked, but good double check)
     // Reconnect to check state is empty
-    final client3 = IOWebSocketChannel.connect(wsUrl, headers: {'Authorization': 'Bearer $token'});
+    final client3 = IOWebSocketChannel.connect(
+      wsUrl,
+      headers: {'Authorization': 'Bearer $token'},
+    );
     final queue3 = StreamQueue(client3.stream);
     client3.sink.add(jsonEncode({'type': 'subscribe', 'channel': tenantId}));
 
@@ -881,7 +1096,8 @@ void main() {
       while (true) {
         final event = await queue3.next.timeout(const Duration(seconds: 1));
         final msg = jsonDecode(event as String);
-        if (msg['type'] == 'UPDATE_TASK' || msg['type'] == 'INSERT_DEPENDENCY') {
+        if (msg['type'] == 'UPDATE_TASK' ||
+            msg['type'] == 'INSERT_DEPENDENCY') {
           hasData = true;
           break;
         }
@@ -889,7 +1105,11 @@ void main() {
     } catch (_) {
       // Timeout means no (more) data received
     }
-    expect(hasData, isFalse, reason: 'Tenant data should be empty after RESET_DATA');
+    expect(
+      hasData,
+      isFalse,
+      reason: 'Tenant data should be empty after RESET_DATA',
+    );
 
     await client2.sink.close();
     await client3.sink.close();

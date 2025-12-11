@@ -7,7 +7,9 @@ void main() async {
 
   // Quick login to get token
   final httpClient = HttpClient();
-  final loginReq = await httpClient.postUrl(Uri.parse('http://localhost:8080/auth/login'));
+  final loginReq = await httpClient.postUrl(
+    Uri.parse('http://localhost:8080/auth/login'),
+  );
   loginReq.headers.contentType = ContentType.json;
   loginReq.write(jsonEncode({'username': 'patrick', 'password': 'password'}));
   final loginRes = await loginReq.close();
@@ -16,7 +18,10 @@ void main() async {
 
   print('Got token: ${token.substring(0, 10)}...');
 
-  final channel = IOWebSocketChannel.connect(wsUrl, headers: {'Authorization': 'Bearer $token'});
+  final channel = IOWebSocketChannel.connect(
+    wsUrl,
+    headers: {'Authorization': 'Bearer $token'},
+  );
 
   // Subscribe first
   final tenantId = 'legacy';
@@ -30,9 +35,14 @@ void main() async {
     jsonEncode({
       'type': 'INSERT_DEPENDENCY',
       'data': {
-        'data': {'predecessorTaskId': 't1', 'successorTaskId': 't2', 'type': 'finishToStart'},
+        'data': {
+          'predecessorTaskId': 't1',
+          'successorTaskId': 't2',
+          'type': 'finishToStart',
+        },
       },
-      'runtimeType': 'operation', // Required by freezed, supposedly client handles this
+      'runtimeType':
+          'operation', // Required by freezed, supposedly client handles this
       'timestamp': DateTime.now().millisecondsSinceEpoch,
       'actorId': 'patrick',
     }),

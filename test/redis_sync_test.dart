@@ -26,20 +26,29 @@ void main() {
 
   // Helper to start a server instance
   Future<Process> startServer(Completer<int> portCompleter) async {
-    final process = await Process.start('dart', ['bin/server.dart'], environment: {'LEGACY_GANTT_SYNC_PORT': '0', ...dbConfig});
+    final process = await Process.start(
+      'dart',
+      ['bin/server.dart'],
+      environment: {'LEGACY_GANTT_SYNC_PORT': '0', ...dbConfig},
+    );
 
-    process.stdout.transform(utf8.decoder).transform(const LineSplitter()).listen((line) {
-      print('[${process.pid} STDOUT] $line');
-      if (!portCompleter.isCompleted && line.contains('SERVER_START')) {
-        try {
-          final json = jsonDecode(line);
-          if (json['event'] == 'SERVER_START') {
-            portCompleter.complete(json['data']['port'] as int);
+    process.stdout
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((line) {
+          print('[${process.pid} STDOUT] $line');
+          if (!portCompleter.isCompleted && line.contains('SERVER_START')) {
+            try {
+              final json = jsonDecode(line);
+              if (json['event'] == 'SERVER_START') {
+                portCompleter.complete(json['data']['port'] as int);
+              }
+            } catch (_) {}
           }
-        } catch (_) {}
-      }
-    });
-    process.stderr.transform(utf8.decoder).listen((line) => print('[${process.pid} STDERR] $line'));
+        });
+    process.stderr
+        .transform(utf8.decoder)
+        .listen((line) => print('[${process.pid} STDERR] $line'));
 
     return process;
   }
@@ -68,7 +77,13 @@ void main() {
   test('Redis Sync: Message propagates from Server A to Server B', () async {
     // 1. Setup Tenant and User via Server A (DB is shared)
     // Login Superuser
-    final loginRes = await http.post(Uri.parse('$hostA/auth/login'), body: jsonEncode({'username': 'redis_test_super', 'password': 'redis_test_pass'}));
+    final loginRes = await http.post(
+      Uri.parse('$hostA/auth/login'),
+      body: jsonEncode({
+        'username': 'redis_test_super',
+        'password': 'redis_test_pass',
+      }),
+    );
     expect(loginRes.statusCode, 200, reason: 'Superuser login failed');
     final superToken = jsonDecode(loginRes.body)['accessToken'];
 
@@ -79,7 +94,11 @@ void main() {
     final regRes = await http.post(
       Uri.parse('$hostA/api/admin/tenants'),
       headers: {'Authorization': 'Bearer $superToken'},
-      body: jsonEncode({'tenantName': tenantName, 'adminUsername': adminUsername, 'adminPassword': 'password'}),
+      body: jsonEncode({
+        'tenantName': tenantName,
+        'adminUsername': adminUsername,
+        'adminPassword': 'password',
+      }),
     );
     expect(regRes.statusCode, 200, reason: 'Tenant creation failed');
     final tenantId = jsonDecode(regRes.body)['tenantId'];
@@ -89,12 +108,19 @@ void main() {
     final userRes = await http.post(
       Uri.parse('$hostA/api/users'),
       headers: {'Authorization': 'Bearer $superToken'},
-      body: jsonEncode({'username': username, 'password': 'password', 'tenantId': tenantId}),
+      body: jsonEncode({
+        'username': username,
+        'password': 'password',
+        'tenantId': tenantId,
+      }),
     );
     expect(userRes.statusCode, 200, reason: 'User creation failed');
 
     // Login as User to get token
-    final userLogin = await http.post(Uri.parse('$hostA/auth/login'), body: jsonEncode({'username': username, 'password': 'password'}));
+    final userLogin = await http.post(
+      Uri.parse('$hostA/auth/login'),
+      body: jsonEncode({'username': username, 'password': 'password'}),
+    );
     final userToken = jsonDecode(userLogin.body)['accessToken'];
 
     // 2. Connect Client A to Server A

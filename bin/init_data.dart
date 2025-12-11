@@ -15,7 +15,11 @@ void main(List<String> args) async {
   String? superToken;
 
   try {
-    final loginRes = await http.post(loginUri, body: jsonEncode({'username': superUser, 'password': superPass}), headers: {'Content-Type': 'application/json'});
+    final loginRes = await http.post(
+      loginUri,
+      body: jsonEncode({'username': superUser, 'password': superPass}),
+      headers: {'Content-Type': 'application/json'},
+    );
 
     if (loginRes.statusCode == 200) {
       final body = jsonDecode(loginRes.body);
@@ -23,7 +27,9 @@ void main(List<String> args) async {
       print('✅ Superuser Login Successful.');
     } else {
       print('❌ Superuser Login Failed: ${loginRes.body}');
-      print('Make sure the server is started with SUPERUSER_USERNAME/PASSWORD env vars.');
+      print(
+        'Make sure the server is started with SUPERUSER_USERNAME/PASSWORD env vars.',
+      );
       exit(1);
     }
   } catch (e) {
@@ -34,13 +40,20 @@ void main(List<String> args) async {
   // 2. Register Tenant "legacy"
   print('\n--- 2. Registering Tenant "legacy" ---');
   final createTenantUri = Uri.parse('$host/api/admin/tenants');
-  final registerBody = {'tenantName': 'legacy', 'adminUsername': 'admin', 'adminPassword': 'password'};
+  final registerBody = {
+    'tenantName': 'legacy',
+    'adminUsername': 'admin',
+    'adminPassword': 'password',
+  };
   String? tenantId;
 
   try {
     final regRes = await http.post(
       createTenantUri,
-      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $superToken'},
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $superToken',
+      },
       body: jsonEncode(registerBody),
     );
 
@@ -71,8 +84,15 @@ void main(List<String> args) async {
   try {
     final createRes = await http.post(
       createUserUri,
-      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $superToken'},
-      body: jsonEncode({'username': 'patrick', 'password': 'password', 'tenantId': tenantId}),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $superToken',
+      },
+      body: jsonEncode({
+        'username': 'patrick',
+        'password': 'password',
+        'tenantId': tenantId,
+      }),
     );
 
     if (createRes.statusCode == 200) {

@@ -30,11 +30,14 @@ Future<void> main() async {
 
   print('Testing TypedValue...');
   try {
-    await crdt.execute('INSERT INTO "$tenantId".dependencies (predecessor_task_id, successor_task_id, type) VALUES (\$1, \$2, \$3)', [
-      TypedValue(Type.text, 't1'),
-      TypedValue(Type.text, 't2'),
-      TypedValue(Type.text, 'finishToStart'),
-    ]);
+    await crdt.execute(
+      'INSERT INTO "$tenantId".dependencies (predecessor_task_id, successor_task_id, type) VALUES (\$1, \$2, \$3)',
+      [
+        TypedValue(Type.text, 't1'),
+        TypedValue(Type.text, 't2'),
+        TypedValue(Type.text, 'finishToStart'),
+      ],
+    );
     print('SUCCESS: TypedValue worked!');
   } catch (e) {
     print('FAILURE: TypedValue failed: $e');
@@ -42,7 +45,10 @@ Future<void> main() async {
 
   print('Testing ? syntax...');
   try {
-    await crdt.execute('INSERT INTO "$tenantId".dependencies (predecessor_task_id, successor_task_id, type) VALUES (?, ?, ?)', ['t3', 't4', 'finishToStart']);
+    await crdt.execute(
+      'INSERT INTO "$tenantId".dependencies (predecessor_task_id, successor_task_id, type) VALUES (?, ?, ?)',
+      ['t3', 't4', 'finishToStart'],
+    );
     print('SUCCESS: ? syntax worked!');
   } catch (e) {
     print('FAILURE: ? syntax failed: $e');
@@ -50,11 +56,10 @@ Future<void> main() async {
 
   print('Testing ::text syntax...');
   try {
-    await crdt.execute('INSERT INTO "$tenantId".dependencies (predecessor_task_id, successor_task_id, type) VALUES (\$1::text, \$2::text, \$3::text)', [
-      't5',
-      't6',
-      'finishToStart',
-    ]);
+    await crdt.execute(
+      'INSERT INTO "$tenantId".dependencies (predecessor_task_id, successor_task_id, type) VALUES (\$1::text, \$2::text, \$3::text)',
+      ['t5', 't6', 'finishToStart'],
+    );
     print('SUCCESS: ::text syntax worked!');
   } catch (e) {
     print('FAILURE: ::text syntax failed: $e');

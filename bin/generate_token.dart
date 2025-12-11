@@ -5,7 +5,9 @@ import 'package:legacy_gantt_sync/utils/logger.dart';
 
 void main(List<String> args) {
   if (args.isEmpty) {
-    JsonLogger.error('INVALID_USAGE', {'message': 'Usage: dart bin/generate_token.dart <user_id> [tenant_id]'});
+    JsonLogger.error('INVALID_USAGE', {
+      'message': 'Usage: dart bin/generate_token.dart <user_id> [tenant_id]',
+    });
     exit(1);
   }
 
@@ -14,7 +16,9 @@ void main(List<String> args) {
   final secret = Platform.environment['JWT_SECRET'];
 
   if (secret == null) {
-    JsonLogger.error('CONFIG_ERROR', {'message': 'JWT_SECRET environment variable is not set.'});
+    JsonLogger.error('CONFIG_ERROR', {
+      'message': 'JWT_SECRET environment variable is not set.',
+    });
     exit(1);
   }
 
@@ -22,7 +26,9 @@ void main(List<String> args) {
     'sub': userId,
     'tenant_id': tenantId,
     'iat': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-    'exp': DateTime.now().add(const Duration(hours: 24)).millisecondsSinceEpoch ~/ 1000,
+    'exp':
+        DateTime.now().add(const Duration(hours: 24)).millisecondsSinceEpoch ~/
+        1000,
   });
 
   final token = jwt.sign(SecretKey(secret));
@@ -30,6 +36,7 @@ void main(List<String> args) {
   JsonLogger.info('TOKEN_GENERATED', {
     'user_id': userId,
     'tenant_id': tenantId,
-    'token': token, // Logging token for convenience in this CLI tool, be careful in logs
+    'token':
+        token, // Logging token for convenience in this CLI tool, be careful in logs
   });
 }

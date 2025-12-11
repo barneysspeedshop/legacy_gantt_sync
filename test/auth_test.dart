@@ -38,20 +38,25 @@ void main() {
     );
 
     // Listen to stdout to capture the port
-    serverProcess!.stdout.transform(utf8.decoder).transform(const LineSplitter()).listen((line) {
-      print('[Server Out] $line');
-      if (!portCompleter.isCompleted && line.contains('SERVER_START')) {
-        try {
-          final json = jsonDecode(line);
-          if (json['event'] == 'SERVER_START') {
-            final data = json['data'];
-            final actualPort = data['port'] as int;
-            portCompleter.complete(actualPort);
+    serverProcess!.stdout
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((line) {
+          print('[Server Out] $line');
+          if (!portCompleter.isCompleted && line.contains('SERVER_START')) {
+            try {
+              final json = jsonDecode(line);
+              if (json['event'] == 'SERVER_START') {
+                final data = json['data'];
+                final actualPort = data['port'] as int;
+                portCompleter.complete(actualPort);
+              }
+            } catch (_) {}
           }
-        } catch (_) {}
-      }
-    });
-    serverProcess!.stderr.transform(utf8.decoder).listen((line) => print('[Server Err] $line'));
+        });
+    serverProcess!.stderr
+        .transform(utf8.decoder)
+        .listen((line) => print('[Server Err] $line'));
 
     // Wait for server startup
     port = await portCompleter.future.timeout(const Duration(seconds: 10));
@@ -60,7 +65,13 @@ void main() {
 
     // Create Superuser explicitly via DB
     final connection = await Connection.open(
-      Endpoint(host: 'localhost', database: 'legacy_gantt', username: 'dart_user', password: 'dart_password', port: 5432),
+      Endpoint(
+        host: 'localhost',
+        database: 'legacy_gantt',
+        username: 'dart_user',
+        password: 'dart_password',
+        port: 5432,
+      ),
       settings: const ConnectionSettings(sslMode: SslMode.disable),
     );
 
@@ -69,14 +80,22 @@ void main() {
       final passwordHash = BCrypt.hashpw(superUserPassword, BCrypt.gensalt());
 
       // Create system tenant
-      await connection.execute("INSERT INTO auth.tenants (id, name, is_active) VALUES ('system', 'System', true) ON CONFLICT (id) DO NOTHING");
+      await connection.execute(
+        "INSERT INTO auth.tenants (id, name, is_active) VALUES ('system', 'System', true) ON CONFLICT (id) DO NOTHING",
+      );
 
       // Upsert superuser
       await connection.execute(
         Sql.named(
           'INSERT INTO auth.users (id, username, password_hash, role, tenant_id, is_active) VALUES (@id, @username, @hash, @role, @tenantId, true) ON CONFLICT (id) DO UPDATE SET password_hash = @hash, tenant_id = @tenantId',
         ),
-        parameters: {'id': superUserId, 'username': superUserUsername, 'hash': passwordHash, 'role': 'superuser', 'tenantId': 'system'},
+        parameters: {
+          'id': superUserId,
+          'username': superUserUsername,
+          'hash': passwordHash,
+          'role': 'superuser',
+          'tenantId': 'system',
+        },
       );
     } finally {
       await connection.close();
@@ -98,7 +117,13 @@ void main() {
 
     test('Register Tenant (via Superuser)', () async {
       // 1. Superuser login
-      final loginRes = await http.post(Uri.parse('$host/auth/login'), body: jsonEncode({'username': superUserUsername, 'password': superUserPassword}));
+      final loginRes = await http.post(
+        Uri.parse('$host/auth/login'),
+        body: jsonEncode({
+          'username': superUserUsername,
+          'password': superUserPassword,
+        }),
+      );
       expect(loginRes.statusCode, 200, reason: 'Superuser login failed');
       final superToken = jsonDecode(loginRes.body)['accessToken'];
 
@@ -106,17 +131,28 @@ void main() {
       final response = await http.post(
         Uri.parse('$host/api/admin/tenants'),
         headers: {'Authorization': 'Bearer $superToken'},
-        body: jsonEncode({'tenantName': tenantName, 'adminUsername': adminUsername, 'adminPassword': 'password'}),
+        body: jsonEncode({
+          'tenantName': tenantName,
+          'adminUsername': adminUsername,
+          'adminPassword': 'password',
+        }),
       );
 
-      expect(response.statusCode, 200, reason: 'Tenant creation failed: ${response.body}');
+      expect(
+        response.statusCode,
+        200,
+        reason: 'Tenant creation failed: ${response.body}',
+      );
       final body = jsonDecode(response.body);
       tenantId = body['tenantId'];
       expect(tenantId, isNotNull);
     });
 
     test('Login Tenant Admin', () async {
-      final response = await http.post(Uri.parse('$host/auth/login'), body: jsonEncode({'username': adminUsername, 'password': 'password'}));
+      final response = await http.post(
+        Uri.parse('$host/auth/login'),
+        body: jsonEncode({'username': adminUsername, 'password': 'password'}),
+      );
 
       expect(response.statusCode, 200, reason: 'Admin login failed');
       final body = jsonDecode(response.body);
@@ -131,7 +167,11 @@ void main() {
         body: jsonEncode({'username': userUsername, 'password': 'userpass'}),
       );
 
-      expect(response.statusCode, 200, reason: 'User creation failed: ${response.body}');
+      expect(
+        response.statusCode,
+        200,
+        reason: 'User creation failed: ${response.body}',
+      );
 
       final body = jsonDecode(response.body);
       userId = body['userId'];
@@ -139,7 +179,10 @@ void main() {
     });
 
     test('Login as New User', () async {
-      final response = await http.post(Uri.parse('$host/auth/login'), body: jsonEncode({'username': userUsername, 'password': 'userpass'}));
+      final response = await http.post(
+        Uri.parse('$host/auth/login'),
+        body: jsonEncode({'username': userUsername, 'password': 'userpass'}),
+      );
 
       expect(response.statusCode, 200);
       final body = jsonDecode(response.body);
@@ -147,12 +190,18 @@ void main() {
     });
 
     test('Revoke User', () async {
-      final response = await http.delete(Uri.parse('$host/api/users/$userId'), headers: {'Authorization': 'Bearer $adminToken'});
+      final response = await http.delete(
+        Uri.parse('$host/api/users/$userId'),
+        headers: {'Authorization': 'Bearer $adminToken'},
+      );
       expect(response.statusCode, 200);
     });
 
     test('Login as Revoked User fails', () async {
-      final response = await http.post(Uri.parse('$host/auth/login'), body: jsonEncode({'username': userUsername, 'password': 'userpass'}));
+      final response = await http.post(
+        Uri.parse('$host/auth/login'),
+        body: jsonEncode({'username': userUsername, 'password': 'userpass'}),
+      );
 
       // Expect forbidden because we check isActive in login
       expect(response.statusCode, 403);

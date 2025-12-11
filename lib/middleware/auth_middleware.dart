@@ -49,7 +49,13 @@ Middleware authMiddleware(String secret, AuthService authService) {
         }
 
         // Pass payload downstream via context
-        final updatedRequest = request.change(context: {'auth.userId': userId, 'auth.tenantId': tenantId, 'auth.role': payload['role']});
+        final updatedRequest = request.change(
+          context: {
+            'auth.userId': userId,
+            'auth.tenantId': tenantId,
+            'auth.role': payload['role'],
+          },
+        );
 
         return innerHandler(updatedRequest);
       } on JWTExpiredException {
