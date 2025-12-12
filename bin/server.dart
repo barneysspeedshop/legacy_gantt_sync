@@ -16,6 +16,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'package:legacy_gantt_sync/models/models.dart';
 import 'package:legacy_gantt_sync/utils/logger.dart';
+import 'package:legacy_gantt_sync/utils/retry_utils.dart';
 
 // Redis Commands (for publishing)
 Command? _redisCommand;
@@ -50,13 +51,16 @@ Future<PostgresCrdt> _getTenantCrdt(String tenantId) {
   return _crdtFutures.putIfAbsent(tenantId, () async {
     try {
       // Sanitize tenantId to prevent SQL injection (simple check)
-      final crdt = await PostgresCrdt.open(
-        Platform.environment['DB_NAME'] ?? 'legacy_gantt',
-        host: Platform.environment['DB_HOST'] ?? 'localhost',
-        port: int.parse(Platform.environment['DB_PORT'] ?? '5432'),
-        username: Platform.environment['DB_USER'] ?? 'dart_user',
-        password: Platform.environment['DB_PASS'] ?? 'dart_password',
-        sslMode: SslMode.disable, // Local postgres doesn't have SSL configured usually
+      final crdt = await retryForever(
+        () => PostgresCrdt.open(
+          Platform.environment['DB_NAME'] ?? 'legacy_gantt',
+          host: Platform.environment['DB_HOST'] ?? 'localhost',
+          port: int.parse(Platform.environment['DB_PORT'] ?? '5432'),
+          username: Platform.environment['DB_USER'] ?? 'dart_user',
+          password: Platform.environment['DB_PASS'] ?? 'dart_password',
+          sslMode: SslMode.disable,
+        ),
+        description: 'Connect to Tenant DB ($tenantId)',
       );
 
       final schema = '"$tenantId"';
@@ -186,18 +190,24 @@ void main(List<String> args) async {
   final port = int.parse(Platform.environment['LEGACY_GANTT_SYNC_PORT'] ?? '8080');
   final jwtSecret = Platform.environment['JWT_SECRET'] ?? 'default_secret'; // WARN: Use strong secret in prod
 
-  final authDbConnection = await Connection.open(
-    Endpoint(
-      host: Platform.environment['DB_HOST'] ?? 'localhost',
-      database: Platform.environment['DB_NAME'] ?? 'legacy_gantt',
-      username: Platform.environment['DB_USER'] ?? 'dart_user',
-      password: Platform.environment['DB_PASS'] ?? 'dart_password',
-      port: int.parse(Platform.environment['DB_PORT'] ?? '5432'),
-    ),
-    settings: const ConnectionSettings(sslMode: SslMode.disable),
-  );
+  Future<Connection> authConnectionFactory() {
+    return retryForever(
+      () => Connection.open(
+        Endpoint(
+          host: Platform.environment['DB_HOST'] ?? 'localhost',
+          database: Platform.environment['DB_NAME'] ?? 'legacy_gantt',
+          username: Platform.environment['DB_USER'] ?? 'dart_user',
+          password: Platform.environment['DB_PASS'] ?? 'dart_password',
+          port: int.parse(Platform.environment['DB_PORT'] ?? '5432'),
+        ),
+        settings: const ConnectionSettings(sslMode: SslMode.disable),
+      ),
+      description: 'Connect to Auth DB',
+    );
+  }
 
-  final authService = AuthService(authDbConnection, jwtSecret);
+  final authService = AuthService(authConnectionFactory, jwtSecret);
+  // Initialize ensures at least one connection is possible at startup
   await authService.init();
 
   final redisHost = Platform.environment['REDIS_HOST'] ?? 'localhost';
@@ -619,7 +629,11 @@ void main(List<String> args) async {
 
               ProtocolMessage? message;
               if (type == 'subscribe') {
-                message = ProtocolMessage.subscribe(type: 'subscribe', channel: jsonMap['channel'] as String);
+                message = ProtocolMessage.subscribe(
+                  type: 'subscribe',
+                  channel: jsonMap['channel'] as String,
+                  lastSyncedTimestamp: jsonMap['lastSyncedTimestamp'] as int?,
+                );
               } else {
                 message = ProtocolMessage.operation(
                   type: type ?? 'unknown',
@@ -1056,7 +1070,7 @@ void main(List<String> args) async {
           ]);
         }
       }();
-    });
+    }, pingInterval: const Duration(seconds: 20));
 
     return handler(request);
   });
