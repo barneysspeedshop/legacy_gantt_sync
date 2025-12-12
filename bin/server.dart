@@ -55,8 +55,7 @@ Future<PostgresCrdt> _getTenantCrdt(String tenantId) {
         port: int.parse(Platform.environment['DB_PORT'] ?? '5432'),
         username: Platform.environment['DB_USER'] ?? 'dart_user',
         password: Platform.environment['DB_PASS'] ?? 'dart_password',
-        sslMode: SslMode
-            .disable, // Local postgres doesn't have SSL configured usually
+        sslMode: SslMode.disable, // Local postgres doesn't have SSL configured usually
       );
 
       final schema = '"$tenantId"';
@@ -84,23 +83,15 @@ Future<PostgresCrdt> _getTenantCrdt(String tenantId) {
       // Migration for existing tables
       try {
         // Rename column if it exists as 'type'
-        await crdt.execute(
-          'ALTER TABLE "$tenantId".tasks RENAME COLUMN type TO gantt_type',
-        );
+        await crdt.execute('ALTER TABLE "$tenantId".tasks RENAME COLUMN type TO gantt_type');
       } catch (_) {
         // Ignore if column doesn't exist or is already renamed
       }
       try {
         // Add if missing
-        await crdt.execute(
-          'ALTER TABLE "$tenantId".tasks ADD COLUMN IF NOT EXISTS gantt_type TEXT',
-        );
-        await crdt.execute(
-          'ALTER TABLE "$tenantId".tasks ADD COLUMN IF NOT EXISTS last_updated BIGINT',
-        );
-        await crdt.execute(
-          'ALTER TABLE "$tenantId".tasks ADD COLUMN IF NOT EXISTS deleted_at BIGINT',
-        );
+        await crdt.execute('ALTER TABLE "$tenantId".tasks ADD COLUMN IF NOT EXISTS gantt_type TEXT');
+        await crdt.execute('ALTER TABLE "$tenantId".tasks ADD COLUMN IF NOT EXISTS last_updated BIGINT');
+        await crdt.execute('ALTER TABLE "$tenantId".tasks ADD COLUMN IF NOT EXISTS deleted_at BIGINT');
       } catch (_) {}
 
       await crdt.execute('''
@@ -121,22 +112,14 @@ Future<PostgresCrdt> _getTenantCrdt(String tenantId) {
       // Migration for dependencies table
       try {
         // Rename column if it exists as 'type'
-        await crdt.execute(
-          'ALTER TABLE "$tenantId".dependencies RENAME COLUMN type TO dependency_type',
-        );
+        await crdt.execute('ALTER TABLE "$tenantId".dependencies RENAME COLUMN type TO dependency_type');
       } catch (_) {
         // Ignore if column doesn't exist or is already renamed
       }
       try {
-        await crdt.execute(
-          'ALTER TABLE "$tenantId".dependencies ADD COLUMN IF NOT EXISTS dependency_type TEXT DEFAULT \'finishToStart\'',
-        );
-        await crdt.execute(
-          'ALTER TABLE "$tenantId".dependencies ADD COLUMN IF NOT EXISTS last_updated BIGINT',
-        );
-        await crdt.execute(
-          'ALTER TABLE "$tenantId".dependencies ADD COLUMN IF NOT EXISTS deleted_at BIGINT',
-        );
+        await crdt.execute('ALTER TABLE "$tenantId".dependencies ADD COLUMN IF NOT EXISTS dependency_type TEXT DEFAULT \'finishToStart\'');
+        await crdt.execute('ALTER TABLE "$tenantId".dependencies ADD COLUMN IF NOT EXISTS last_updated BIGINT');
+        await crdt.execute('ALTER TABLE "$tenantId".dependencies ADD COLUMN IF NOT EXISTS deleted_at BIGINT');
       } catch (_) {}
 
       // Create resources table
@@ -156,15 +139,9 @@ Future<PostgresCrdt> _getTenantCrdt(String tenantId) {
     )
     ''');
       try {
-        await crdt.execute(
-          'ALTER TABLE "$tenantId".resources ADD COLUMN IF NOT EXISTS gantt_type TEXT',
-        );
-        await crdt.execute(
-          'ALTER TABLE "$tenantId".resources ADD COLUMN IF NOT EXISTS last_updated BIGINT',
-        );
-        await crdt.execute(
-          'ALTER TABLE "$tenantId".resources ADD COLUMN IF NOT EXISTS deleted_at BIGINT',
-        );
+        await crdt.execute('ALTER TABLE "$tenantId".resources ADD COLUMN IF NOT EXISTS gantt_type TEXT');
+        await crdt.execute('ALTER TABLE "$tenantId".resources ADD COLUMN IF NOT EXISTS last_updated BIGINT');
+        await crdt.execute('ALTER TABLE "$tenantId".resources ADD COLUMN IF NOT EXISTS deleted_at BIGINT');
       } catch (_) {}
 
       _tenantCrdts[tenantId] = crdt;
@@ -187,10 +164,8 @@ Middleware corsHeaders() {
           '',
           headers: {
             'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods':
-                'GET, POST, PUT, DELETE, OPTIONS, PATCH',
-            'Access-Control-Allow-Headers':
-                'Origin, Content-Type, Authorization, X-Requested-With',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
+            'Access-Control-Allow-Headers': 'Origin, Content-Type, Authorization, X-Requested-With',
           },
         );
       }
@@ -198,10 +173,8 @@ Middleware corsHeaders() {
       return response.change(
         headers: {
           'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods':
-              'GET, POST, PUT, DELETE, OPTIONS, PATCH',
-          'Access-Control-Allow-Headers':
-              'Origin, Content-Type, Authorization, X-Requested-With',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
+          'Access-Control-Allow-Headers': 'Origin, Content-Type, Authorization, X-Requested-With',
         },
       );
     };
@@ -209,12 +182,8 @@ Middleware corsHeaders() {
 }
 
 void main(List<String> args) async {
-  final port = int.parse(
-    Platform.environment['LEGACY_GANTT_SYNC_PORT'] ?? '8080',
-  );
-  final jwtSecret =
-      Platform.environment['JWT_SECRET'] ??
-      'default_secret'; // WARN: Use strong secret in prod
+  final port = int.parse(Platform.environment['LEGACY_GANTT_SYNC_PORT'] ?? '8080');
+  final jwtSecret = Platform.environment['JWT_SECRET'] ?? 'default_secret'; // WARN: Use strong secret in prod
 
   final authDbConnection = await Connection.open(
     Endpoint(
@@ -264,10 +233,7 @@ void main(List<String> args) async {
             }
           }
         } catch (e) {
-          JsonLogger.error('REDIS_MSG_ERROR', {
-            'error': e.toString(),
-            'payload': payload,
-          });
+          JsonLogger.error('REDIS_MSG_ERROR', {'error': e.toString(), 'payload': payload});
         }
       }
     });
@@ -276,10 +242,8 @@ void main(List<String> args) async {
   }
 
   // --- Seeding ---
-  final superUserUser =
-      Platform.environment['SUPERUSER_USERNAME'] ?? 'superuser';
-  final superUserPass =
-      Platform.environment['SUPERUSER_PASSWORD'] ?? 'superuser';
+  final superUserUser = Platform.environment['SUPERUSER_USERNAME'] ?? 'superuser';
+  final superUserPass = Platform.environment['SUPERUSER_PASSWORD'] ?? 'superuser';
 
   // Always try to ensure superuser exists in dev/local
   try {
@@ -296,39 +260,24 @@ void main(List<String> args) async {
   // Create Tenant (Superuser Only)
   apiRouter.post('/admin/tenants', (Request request) async {
     final role = request.context['auth.role'] as String;
-    if (role != 'superuser')
+    if (role != 'superuser') {
       return Response.forbidden('Requires superuser role');
+    }
 
     try {
-      final body =
-          jsonDecode(await request.readAsString()) as Map<String, dynamic>;
-      final tenant = await authService.registerTenant(
-        body['tenantName'],
-        body['adminUsername'],
-        body['adminPassword'],
-      );
-      return Response.ok(
-        jsonEncode({
-          'tenantId': tenant.id,
-          'message': 'Tenant registered successfully',
-        }),
-      );
+      final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+      final tenant = await authService.registerTenant(body['tenantName'], body['adminUsername'], body['adminPassword']);
+      return Response.ok(jsonEncode({'tenantId': tenant.id, 'message': 'Tenant registered successfully'}));
     } catch (e) {
       JsonLogger.error('REGISTER_ERROR', {'error': e.toString()});
-      return Response.internalServerError(
-        body: jsonEncode({'error': e.toString()}),
-      );
+      return Response.internalServerError(body: jsonEncode({'error': e.toString()}));
     }
   });
 
   app.post('/auth/login', (Request request) async {
     try {
-      final body =
-          jsonDecode(await request.readAsString()) as Map<String, dynamic>;
-      final tokens = await authService.login(
-        body['username'],
-        body['password'],
-      );
+      final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+      final tokens = await authService.login(body['username'], body['password']);
       return Response.ok(jsonEncode(tokens));
     } catch (e) {
       JsonLogger.warn('LOGIN_FAILED', {'error': e.toString()});
@@ -338,17 +287,14 @@ void main(List<String> args) async {
 
   // Add User (Tenant Admin or Superuser)
   apiRouter.post('/users', (Request request) async {
-    final body =
-        jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+    final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
     final creatorTenantId = request.context['auth.tenantId'] as String?;
     final creatorRole = request.context['auth.role'] as String;
 
     String targetTenantId;
     if (body.containsKey('tenantId')) {
       if (creatorRole != 'superuser') {
-        return Response.forbidden(
-          'Only superusers can create users for other tenants',
-        );
+        return Response.forbidden('Only superusers can create users for other tenants');
       }
       targetTenantId = body['tenantId'];
     } else {
@@ -360,25 +306,14 @@ void main(List<String> args) async {
 
     final String role = body['role'] ?? 'user';
     if (role == 'superuser' && creatorRole != 'superuser') {
-      return Response.forbidden(
-        'Only superusers can create superuser accounts',
-      );
+      return Response.forbidden('Only superusers can create superuser accounts');
     }
 
     try {
-      final user = await authService.registerUser(
-        targetTenantId,
-        body['username'],
-        body['password'],
-        role,
-      );
-      return Response.ok(
-        jsonEncode({'userId': user.id, 'message': 'User created'}),
-      );
+      final user = await authService.registerUser(targetTenantId, body['username'], body['password'], role);
+      return Response.ok(jsonEncode({'userId': user.id, 'message': 'User created'}));
     } catch (e) {
-      return Response.internalServerError(
-        body: jsonEncode({'error': e.toString()}),
-      );
+      return Response.internalServerError(body: jsonEncode({'error': e.toString()}));
     }
   });
 
@@ -411,48 +346,29 @@ void main(List<String> args) async {
   // List All Tenants
   apiRouter.get('/admin/tenants', (Request request) async {
     final role = request.context['auth.role'] as String;
-    if (role != 'superuser')
+    if (role != 'superuser') {
       return Response.forbidden('Requires superuser role');
+    }
 
     try {
       final tenants = await authService.getAllTenants();
-      return Response.ok(
-        jsonEncode(
-          tenants
-              .map((t) => {'id': t.id, 'name': t.name, 'isActive': t.isActive})
-              .toList(),
-        ),
-      );
+      return Response.ok(jsonEncode(tenants.map((t) => {'id': t.id, 'name': t.name, 'isActive': t.isActive}).toList()));
     } catch (e) {
       return Response.internalServerError(body: e.toString());
     }
   });
 
   // List Users for Tenant
-  apiRouter.get('/admin/tenants/<tenantId>/users', (
-    Request request,
-    String tenantId,
-  ) async {
+  apiRouter.get('/admin/tenants/<tenantId>/users', (Request request, String tenantId) async {
     final role = request.context['auth.role'] as String;
-    if (role != 'superuser')
+    if (role != 'superuser') {
       return Response.forbidden('Requires superuser role');
+    }
 
     try {
       final users = await authService.getUsersByTenant(tenantId);
       return Response.ok(
-        jsonEncode(
-          users
-              .map(
-                (u) => {
-                  'id': u.id,
-                  'username': u.username,
-                  'role': u.role,
-                  'tenantId': u.tenantId,
-                  'isActive': u.isActive,
-                },
-              )
-              .toList(),
-        ),
+        jsonEncode(users.map((u) => {'id': u.id, 'username': u.username, 'role': u.role, 'tenantId': u.tenantId, 'isActive': u.isActive}).toList()),
       );
     } catch (e) {
       return Response.internalServerError(body: e.toString());
@@ -465,9 +381,7 @@ void main(List<String> args) async {
   app.mount(
     '/api/',
     const Pipeline()
-        .addMiddleware(
-          roleMiddleware(['tenant_admin', 'superuser']),
-        ) // Default minimal protection
+        .addMiddleware(roleMiddleware(['tenant_admin', 'superuser'])) // Default minimal protection
         .addHandler(apiRouter.call),
   );
 
@@ -484,32 +398,23 @@ void main(List<String> args) async {
       final clientInfo = ClientInfo(userId, tenantId, connectionId);
       _clientInfos[channel] = clientInfo;
 
-      JsonLogger.info('CLIENT_CONNECTED', {
-        'user_id': userId,
-        'tenant_id': tenantId,
-      });
+      JsonLogger.info('CLIENT_CONNECTED', {'user_id': userId, 'tenant_id': tenantId});
 
       () async {
         try {
           await for (final rawMessage in channel.stream) {
             try {
-              final jsonMap =
-                  jsonDecode(rawMessage as String) as Map<String, dynamic>;
+              final jsonMap = jsonDecode(rawMessage as String) as Map<String, dynamic>;
               final type = jsonMap['type'] as String?;
 
               ProtocolMessage? message;
               if (type == 'subscribe') {
-                message = ProtocolMessage.subscribe(
-                  type: 'subscribe',
-                  channel: jsonMap['channel'] as String,
-                );
+                message = ProtocolMessage.subscribe(type: 'subscribe', channel: jsonMap['channel'] as String);
               } else {
                 message = ProtocolMessage.operation(
                   type: type ?? 'unknown',
                   data: jsonMap['data'] ?? {},
-                  timestamp:
-                      jsonMap['timestamp'] as int? ??
-                      DateTime.now().millisecondsSinceEpoch,
+                  timestamp: jsonMap['timestamp'] as int? ?? DateTime.now().millisecondsSinceEpoch,
                   actorId: userId,
                 );
               }
@@ -517,8 +422,7 @@ void main(List<String> args) async {
               await message.map(
                 subscribe: (msg) async {
                   final requestedChannel = msg.channel;
-                  final lastSynced =
-                      msg.lastSyncedTimestamp; // Delta Sync timestamp
+                  final lastSynced = msg.lastSyncedTimestamp; // Delta Sync timestamp
 
                   JsonLogger.info('SUBSCRIBE_ATTEMPT', {
                     'user_id': userId,
@@ -534,31 +438,17 @@ void main(List<String> args) async {
                     }
 
                     clientInfo.currentChannel = requestedChannel;
-                    final channelList = _channels.putIfAbsent(
-                      requestedChannel,
-                      () => [],
-                    );
+                    final channelList = _channels.putIfAbsent(requestedChannel, () => []);
                     channelList.add(channel);
 
                     // If this is the first client, subscribe Redis (optimization)
                     if (channelList.length == 1) {
                       _redisPubSub?.subscribe([requestedChannel]);
-                      JsonLogger.info('REDIS_SUBSCRIBE', {
-                        'channel': requestedChannel,
-                      });
+                      JsonLogger.info('REDIS_SUBSCRIBE', {'channel': requestedChannel});
                     }
 
-                    JsonLogger.info('SUBSCRIBE_SUCCESS', {
-                      'user_id': userId,
-                      'tenant_id': tenantId,
-                      'channel': requestedChannel,
-                    });
-                    channel.sink.add(
-                      jsonEncode({
-                        'type': 'SUBSCRIBE_SUCCESS',
-                        'channel': requestedChannel,
-                      }),
-                    );
+                    JsonLogger.info('SUBSCRIBE_SUCCESS', {'user_id': userId, 'tenant_id': tenantId, 'channel': requestedChannel});
+                    channel.sink.add(jsonEncode({'type': 'SUBSCRIBE_SUCCESS', 'channel': requestedChannel}));
 
                     try {
                       final crdt = await _getTenantCrdt(tenantId);
@@ -566,32 +456,19 @@ void main(List<String> args) async {
                       // Build partial query if delta sync
                       String whereClause = '';
                       if (lastSynced != null && lastSynced > 0) {
-                        whereClause =
-                            'WHERE (last_updated > $lastSynced OR deleted_at > $lastSynced)';
-                        JsonLogger.info('DELTA_SYNC_QUERY', {
-                          'where': whereClause,
-                          'lastSynced': lastSynced,
-                        });
+                        whereClause = 'WHERE (last_updated > $lastSynced OR deleted_at > $lastSynced)';
+                        JsonLogger.info('DELTA_SYNC_QUERY', {'where': whereClause, 'lastSynced': lastSynced});
                       } else {
                         // Full load: ignore deleted, ignore timestamp
-                        whereClause =
-                            'WHERE (is_deleted IS FALSE OR is_deleted = false)';
-                        JsonLogger.info('FULL_SYNC_QUERY', {
-                          'where': whereClause,
-                        });
+                        whereClause = 'WHERE (is_deleted IS FALSE OR is_deleted = false)';
+                        JsonLogger.info('FULL_SYNC_QUERY', {'where': whereClause});
                       }
 
                       // 1. Send Tasks
-                      final tasks = await crdt.query(
-                        'SELECT * FROM "$tenantId".tasks $whereClause',
-                      );
-                      JsonLogger.info('SYNC_SENDING_TASKS', {
-                        'count': tasks.length,
-                        'tenant_id': tenantId,
-                      });
+                      final tasks = await crdt.query('SELECT * FROM "$tenantId".tasks $whereClause');
+                      JsonLogger.info('SYNC_SENDING_TASKS', {'count': tasks.length, 'tenant_id': tenantId});
                       for (final row in tasks) {
-                        final isDeleted =
-                            row['is_deleted'] == true || row['is_deleted'] == 1;
+                        final isDeleted = row['is_deleted'] == true || row['is_deleted'] == 1;
                         // If full sync, we filtered deleted in SQL. If delta sync, we need to send deletions.
                         // Check explicit deleted_at logic if available, or fallback to is_deleted.
 
@@ -607,14 +484,9 @@ void main(List<String> args) async {
                         };
                         final envelope = {
                           'type': isDeleted ? 'DELETE_TASK' : 'UPDATE_TASK',
-                          'data': {
-                            'data': cleanData,
-                            'gantt_type': row['gantt_type'],
-                          },
+                          'data': {'data': cleanData, 'gantt_type': row['gantt_type']},
                           // If deleting, provide ID in data wrapper so client knows what to delete
-                          'timestamp':
-                              row['last_updated'] ??
-                              DateTime.now().millisecondsSinceEpoch,
+                          'timestamp': row['last_updated'] ?? DateTime.now().millisecondsSinceEpoch,
                           'actorId': 'server-sync',
                         };
                         if (isDeleted) {
@@ -627,44 +499,30 @@ void main(List<String> args) async {
                       }
 
                       // 2. Send Dependencies
-                      final allDeps = await crdt.query(
-                        'SELECT * FROM "$tenantId".dependencies $whereClause',
-                      );
+                      final allDeps = await crdt.query('SELECT * FROM "$tenantId".dependencies $whereClause');
                       for (final record in allDeps) {
-                        final isDeleted =
-                            (record['is_deleted'] == true ||
-                            record['is_deleted'] == 1);
+                        final isDeleted = (record['is_deleted'] == true || record['is_deleted'] == 1);
 
                         final cleanData = {
-                          'predecessorTaskId': record['predecessor_task_id']
-                              ?.toString(),
-                          'successorTaskId': record['successor_task_id']
-                              ?.toString(),
+                          'predecessorTaskId': record['predecessor_task_id']?.toString(),
+                          'successorTaskId': record['successor_task_id']?.toString(),
                           'type': record['dependency_type'],
                           'dependency_type': record['dependency_type'],
                           'dependencyType': record['dependency_type'],
                         };
                         final envelope = {
-                          'type': isDeleted
-                              ? 'DELETE_DEPENDENCY'
-                              : 'INSERT_DEPENDENCY',
+                          'type': isDeleted ? 'DELETE_DEPENDENCY' : 'INSERT_DEPENDENCY',
                           'data': {'data': cleanData},
-                          'timestamp':
-                              record['last_updated'] ??
-                              DateTime.now().millisecondsSinceEpoch,
+                          'timestamp': record['last_updated'] ?? DateTime.now().millisecondsSinceEpoch,
                           'actorId': 'server-sync',
                         };
                         channel.sink.add(jsonEncode(envelope));
                       }
 
                       // 3. Send Resources
-                      final allResources = await crdt.query(
-                        'SELECT * FROM "$tenantId".resources $whereClause',
-                      );
+                      final allResources = await crdt.query('SELECT * FROM "$tenantId".resources $whereClause');
                       for (final record in allResources) {
-                        final isDeleted =
-                            (record['is_deleted'] == true ||
-                            record['is_deleted'] == 1);
+                        final isDeleted = (record['is_deleted'] == true || record['is_deleted'] == 1);
 
                         final cleanData = {
                           'id': record['id']?.toString(),
@@ -676,18 +534,13 @@ void main(List<String> args) async {
                           'gantt_type': record['gantt_type'],
                         };
                         final envelope = {
-                          'type': isDeleted
-                              ? 'DELETE_RESOURCE'
-                              : 'INSERT_RESOURCE', // Assuming delete resource type exists
+                          'type': isDeleted ? 'DELETE_RESOURCE' : 'INSERT_RESOURCE', // Assuming delete resource type exists
                           'data': {'data': cleanData},
-                          'timestamp':
-                              record['last_updated'] ??
-                              DateTime.now().millisecondsSinceEpoch,
+                          'timestamp': record['last_updated'] ?? DateTime.now().millisecondsSinceEpoch,
                           'actorId': 'server-sync',
                         };
                         if (isDeleted) {
-                          envelope['type'] =
-                              'DELETE_RESOURCE'; // Ensure type is correct
+                          envelope['type'] = 'DELETE_RESOURCE'; // Ensure type is correct
                           envelope['data'] = {
                             'data': {'id': record['id']?.toString()},
                           };
@@ -695,19 +548,11 @@ void main(List<String> args) async {
                         channel.sink.add(jsonEncode(envelope));
                       }
                     } catch (e) {
-                      JsonLogger.error('DB_ERROR', {
-                        'error': e.toString(),
-                        'tenant_id': tenantId,
-                      });
+                      JsonLogger.error('DB_ERROR', {'error': e.toString(), 'tenant_id': tenantId});
                     }
                   } else {
-                    JsonLogger.warn('SECURITY_ALERT', {
-                      'message': 'Cross-tenant subscription attempt',
-                      'user_id': userId,
-                    });
-                    channel.sink.add(
-                      jsonEncode({'error': 'Forbidden channel'}),
-                    );
+                    JsonLogger.warn('SECURITY_ALERT', {'message': 'Cross-tenant subscription attempt', 'user_id': userId});
+                    channel.sink.add(jsonEncode({'error': 'Forbidden channel'}));
                   }
                 },
                 operation: (msg) async {
@@ -716,12 +561,7 @@ void main(List<String> args) async {
                     'type': msg.type,
                     'user_id': userId,
                     'tenant_id': tenantId,
-                    'data_summary': msg.data.toString().substring(
-                      0,
-                      (msg.data.toString().length < 100
-                          ? msg.data.toString().length
-                          : 100),
-                    ),
+                    'data_summary': msg.data.toString().substring(0, (msg.data.toString().length < 100 ? msg.data.toString().length : 100)),
                   });
 
                   if (currentChannel != null) {
@@ -731,18 +571,12 @@ void main(List<String> args) async {
 
                       if (type == 'INSERT_DEPENDENCY') {
                         var data = msg.data['data'];
-                        if (data != null &&
-                            data['data'] != null &&
-                            data['data'] is Map) {
+                        if (data != null && data['data'] != null && data['data'] is Map) {
                           data = data['data'];
                         }
                         final pred = data['predecessorTaskId'];
                         final succ = data['successorTaskId'];
-                        final depType =
-                            data['dependency_type'] ??
-                            data['dependencyType'] ??
-                            data['type'] ??
-                            'finishToStart';
+                        final depType = data['dependency_type'] ?? data['dependencyType'] ?? data['type'] ?? 'finishToStart';
 
                         await crdt.execute(
                           'INSERT INTO "${clientInfo.tenantId}".dependencies (predecessor_task_id, successor_task_id, dependency_type, last_updated) VALUES (?, ?, ?, ?) ON CONFLICT (predecessor_task_id, successor_task_id) DO UPDATE SET dependency_type = EXCLUDED.dependency_type, last_updated = EXCLUDED.last_updated, is_deleted = false, deleted_at = NULL',
@@ -750,9 +584,7 @@ void main(List<String> args) async {
                         );
                       } else if (type == 'DELETE_DEPENDENCY') {
                         var data = msg.data['data'];
-                        if (data != null &&
-                            data['data'] != null &&
-                            data['data'] is Map) {
+                        if (data != null && data['data'] != null && data['data'] is Map) {
                           data = data['data'];
                         }
                         final pred = data['predecessorTaskId'];
@@ -764,16 +596,9 @@ void main(List<String> args) async {
                         );
                       } else if (type == 'RESET_DATA') {
                         try {
-                          await crdt.execute(
-                            'DELETE FROM "${clientInfo.tenantId}".dependencies',
-                          );
-                          await crdt.execute(
-                            'DELETE FROM "${clientInfo.tenantId}".tasks',
-                          );
-                          JsonLogger.info('DATA_RESET', {
-                            'tenant_id': clientInfo.tenantId,
-                            'user_id': userId,
-                          });
+                          await crdt.execute('DELETE FROM "${clientInfo.tenantId}".dependencies');
+                          await crdt.execute('DELETE FROM "${clientInfo.tenantId}".tasks');
+                          JsonLogger.info('DATA_RESET', {'tenant_id': clientInfo.tenantId, 'user_id': userId});
 
                           // Redis Publish RESET_DATA
                           final resetMsg = {
@@ -783,11 +608,7 @@ void main(List<String> args) async {
                             'actorId': userId,
                             'originConnectionId': clientInfo.connectionId,
                           };
-                          _redisCommand?.send_object([
-                            'PUBLISH',
-                            clientInfo.tenantId,
-                            jsonEncode(resetMsg),
-                          ]);
+                          _redisCommand?.send_object(['PUBLISH', clientInfo.tenantId, jsonEncode(resetMsg)]);
 
                           // Local broadcast handled by Redis Listener loop?
                           // Redis listener will hear this and broadcast to local clients (including other tabs of same user).
@@ -808,33 +629,23 @@ void main(List<String> args) async {
                           */
                           // Identical logic. The sender is excluded.
                         } catch (e) {
-                          JsonLogger.error('RESET_FAILED', {
-                            'error': e.toString(),
-                            'tenant_id': clientInfo.tenantId,
-                          });
+                          JsonLogger.error('RESET_FAILED', {'error': e.toString(), 'tenant_id': clientInfo.tenantId});
                         }
-                      } else if (type == 'UPDATE_TASK' ||
-                          type == 'INSERT_TASK') {
+                      } else if (type == 'UPDATE_TASK' || type == 'INSERT_TASK') {
                         final payload = msg.data;
                         Map<String, dynamic>? innerData;
-                        if (payload.containsKey('data') &&
-                            payload['data'] is Map) {
-                          innerData = Map<String, dynamic>.from(
-                            payload['data'] as Map,
-                          );
+                        if (payload.containsKey('data') && payload['data'] is Map) {
+                          innerData = Map<String, dynamic>.from(payload['data'] as Map);
                         } else {
                           innerData = payload;
                         }
 
-                        if (innerData != null && innerData['id'] != null) {
+                        if (innerData['id'] != null) {
                           final name = innerData['name'];
                           final start = innerData['start_date'];
                           final end = innerData['end_date'];
                           final parent = innerData['parent_id'];
-                          final ganttType =
-                              innerData['gantt_type'] ??
-                              innerData['type'] ??
-                              'task';
+                          final ganttType = innerData['gantt_type'] ?? innerData['type'] ?? 'task';
 
                           await crdt.execute(
                             '''
@@ -850,37 +661,22 @@ void main(List<String> args) async {
                               is_deleted = false,
                               deleted_at = NULL
                             ''',
-                            [
-                              innerData['id'],
-                              name,
-                              start,
-                              end,
-                              parent,
-                              ganttType,
-                              msg.timestamp,
-                            ],
+                            [innerData['id'], name, start, end, parent, ganttType, msg.timestamp],
                           );
                         }
                       } else if (type == 'INSERT_RESOURCE') {
                         final payload = msg.data;
                         Map<String, dynamic>? innerData;
-                        if (payload.containsKey('data') &&
-                            payload['data'] is Map) {
-                          innerData = Map<String, dynamic>.from(
-                            payload['data'] as Map,
-                          );
+                        if (payload.containsKey('data') && payload['data'] is Map) {
+                          innerData = Map<String, dynamic>.from(payload['data'] as Map);
                         } else {
                           innerData = payload;
                         }
 
-                        if (innerData != null && innerData['id'] != null) {
+                        if (innerData['id'] != null) {
                           final name = innerData['name'];
-                          final parent =
-                              innerData['parent_id'] ?? innerData['parentId'];
-                          final expanded =
-                              innerData['is_expanded'] ??
-                              innerData['isExpanded'] ??
-                              true;
+                          final parent = innerData['parent_id'] ?? innerData['parentId'];
+                          final expanded = innerData['is_expanded'] ?? innerData['isExpanded'] ?? true;
                           final ganttType = innerData['gantt_type'];
 
                           await crdt.execute(
@@ -896,45 +692,37 @@ void main(List<String> args) async {
                               is_deleted = false,
                               deleted_at = NULL
                             ''',
-                            [
-                              innerData['id'],
-                              name,
-                              parent,
-                              expanded,
-                              ganttType,
-                              msg.timestamp,
-                            ],
+                            [innerData['id'], name, parent, expanded, ganttType, msg.timestamp],
                           );
                         }
-                      } else if (type == 'DELETE_TASK' ||
-                          type == 'DELETE_RESOURCE') {
+                      } else if (type == 'DELETE_TASK' || type == 'DELETE_RESOURCE') {
                         // Removed generic 'DELETE' to be safer
                         final payload = msg.data;
                         Map<String, dynamic>? innerData;
-                        if (payload.containsKey('data') &&
-                            payload['data'] is Map) {
+                        if (payload.containsKey('data') && payload['data'] is Map) {
                           innerData = payload['data'] as Map<String, dynamic>;
                         } else {
                           innerData = payload;
                         }
 
-                        final id = innerData != null ? innerData['id'] : null;
+                        final id = innerData['id'];
 
                         if (id != null) {
                           String tableName = 'tasks';
-                          if (type == 'DELETE_RESOURCE')
+                          if (type == 'DELETE_RESOURCE') {
                             tableName = 'resources';
+                          }
                           final table = '"${clientInfo.tenantId}".$tableName';
 
-                          await crdt.execute(
-                            'UPDATE $table SET is_deleted = true, deleted_at = ?, last_updated = ? WHERE id = ?',
-                            [msg.timestamp, msg.timestamp, id],
-                          );
+                          await crdt.execute('UPDATE $table SET is_deleted = true, deleted_at = ?, last_updated = ? WHERE id = ?', [
+                            msg.timestamp,
+                            msg.timestamp,
+                            id,
+                          ]);
                         }
                       } else if (type == 'CURSOR_MOVE') {
                         // However, to be explicit and avoid "UNKNOWN_OPERATION" log, we should have an empty block.
-                      } else if (type == 'GHOST_UPDATE' ||
-                          type == 'PRESENCE_UPDATE') {
+                      } else if (type == 'GHOST_UPDATE' || type == 'PRESENCE_UPDATE') {
                         // Just broadcast, do not persist.
                         // We rely on the broadcast logic below if it falls through,
                         // BUT we must ensure the `if (type != 'RESET_DATA')` block picks it up.
@@ -942,10 +730,7 @@ void main(List<String> args) async {
                         // hits the broadcast block.
                         // So we just need an empty block here to avoid 'UNKNOWN_OPERATION'.
                       } else {
-                        JsonLogger.info('UNKNOWN_OPERATION', {
-                          'type': type,
-                          'data': msg.data,
-                        });
+                        JsonLogger.info('UNKNOWN_OPERATION', {'type': type, 'data': msg.data});
                       }
 
                       // Broadcast to others via Redis
@@ -962,11 +747,7 @@ void main(List<String> args) async {
 
                         // Check if Redis is available, otherwise fallback (or fail silent, but logs warning)
                         if (_redisCommand != null) {
-                          _redisCommand!.send_object([
-                            'PUBLISH',
-                            currentChannel,
-                            jsonEncode(envelope),
-                          ]);
+                          _redisCommand!.send_object(['PUBLISH', currentChannel, jsonEncode(envelope)]);
                         } else {
                           // Fallback to local broadcast if Redis missing?
                           // Maintain partial functionality
@@ -980,10 +761,7 @@ void main(List<String> args) async {
                         }
                       }
                     } catch (e) {
-                      JsonLogger.error('DB_WRITE_ERROR', {
-                        'error': e.toString(),
-                        'tenant_id': clientInfo.tenantId,
-                      });
+                      JsonLogger.error('DB_WRITE_ERROR', {'error': e.toString(), 'tenant_id': clientInfo.tenantId});
                     }
                   }
                 },
@@ -1003,18 +781,13 @@ void main(List<String> args) async {
               list.remove(channel);
               if (list.isEmpty) {
                 _redisPubSub?.unsubscribe([currentChannel]);
-                JsonLogger.info('REDIS_UNSUBSCRIBE', {
-                  'channel': currentChannel,
-                });
+                JsonLogger.info('REDIS_UNSUBSCRIBE', {'channel': currentChannel});
                 _channels.remove(currentChannel);
               }
             }
           }
           _clientInfos.remove(channel);
-          JsonLogger.info('CLIENT_DISCONNECTED', {
-            'user_id': userId,
-            'tenant_id': tenantId,
-          });
+          JsonLogger.info('CLIENT_DISCONNECTED', {'user_id': userId, 'tenant_id': tenantId});
         }
       }();
     });
@@ -1032,8 +805,5 @@ void main(List<String> args) async {
       .addHandler(app.call);
 
   final server = await shelf_io.serve(handler, InternetAddress.anyIPv4, port);
-  JsonLogger.info('SERVER_START', {
-    'host': server.address.host,
-    'port': server.port,
-  });
+  JsonLogger.info('SERVER_START', {'host': server.address.host, 'port': server.port});
 }
