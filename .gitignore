@@ -1,3 +1,9 @@
 # https://dart.dev/guides/libraries/private-files
 # Created by `dart pub`
 .dart_tool/
+config/android
+config/linux
+.idea
+build
+nginx/certs/selfsigned.crt
+nginx/certs/selfsigned.key

@@ -5,10 +5,13 @@ services:
       POSTGRES_USER: dart_user
       POSTGRES_PASSWORD: dart_password
       POSTGRES_DB: legacy_gantt
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dart_user -d legacy_gantt"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7
@@ -16,8 +19,47 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      # Networking
+      DB_HOST: db
+      REDIS_HOST: redis
+      # DB Config
+      DB_NAME: legacy_gantt
+      DB_USER: dart_user
+      DB_PASS: dart_password
+      DB_PORT: 5432
+      # App Config
+      LEGACY_GANTT_SYNC_PORT: 8080
+      JWT_SECRET: "your_dev_secret_key" # Replace in prod
+      SUPERUSER_USERNAME: "superuser"
+      SUPERUSER_PASSWORD: "superuser"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      - server
 
 volumes:
   pgdata:
   redis_data:
-# TODO: Add dart server image once ready
