@@ -1,7 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-// import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:legacy_gantt_sync/middleware/auth_middleware.dart';
 import 'package:legacy_gantt_sync/services/auth_service.dart';
 import 'package:postgres/postgres.dart';
@@ -593,32 +594,58 @@ void main(List<String> args) async {
 
   // --- WebSocket ---
   app.get('/ws', (Request request) async {
-    // Auth handled by middleware
-    final userId = request.context['auth.userId'] as String;
-    final tenantId = request.context['auth.tenantId'] as String;
-    final role = request.context['auth.role'] as String;
+    // Auth might be missing here if token was not in URL
+    var userId = request.context['auth.userId'] as String?;
+    var tenantId = request.context['auth.tenantId'] as String?;
+    var role = request.context['auth.role'] as String?;
 
     final handler = webSocketHandler((webSocket, _) {
       final channel = webSocket;
       final connectionId = const Uuid().v4();
-      final clientInfo = ClientInfo(userId, tenantId, role, connectionId);
-      _clientInfos[channel] = clientInfo;
 
-      JsonLogger.info('CLIENT_CONNECTED', {'user_id': userId, 'tenant_id': tenantId});
+      // We'll wrap clientInfo state management
+      ClientInfo? clientInfo;
 
-      // Broadcast USER_LIST_UPDATE for the tenant so user list shows "connected"
-      _redisCommand?.send_object([
-        'PUBLISH',
-        'tenant_users_$tenantId',
-        jsonEncode({'type': 'USER_LIST_UPDATE', 'timestamp': DateTime.now().millisecondsSinceEpoch}),
-      ]);
+      // Hardened Security: Disconnect if auth not completed within 10 seconds
+      Timer(const Duration(seconds: 10), () {
+        if (clientInfo == null) {
+          JsonLogger.warn('AUTH_TIMEOUT', {'connectionId': connectionId});
+          channel.sink.close(4003, 'Auth timeout');
+        }
+      });
 
-      // Broadcast TENANT_LIST_UPDATE for admin stats (active connections count)
-      _redisCommand?.send_object([
-        'PUBLISH',
-        'admin_updates',
-        jsonEncode({'type': 'TENANT_LIST_UPDATE', 'timestamp': DateTime.now().millisecondsSinceEpoch}),
-      ]);
+      // Function to Initialize Client Session once Authenticated
+      void initializeSession(String uId, String tId, String r) {
+        userId = uId;
+        tenantId = tId;
+        role = r;
+        clientInfo = ClientInfo(uId, tId, r, connectionId);
+        _clientInfos[channel] = clientInfo!;
+
+        JsonLogger.info('CLIENT_CONNECTED', {'user_id': uId, 'tenant_id': tId});
+
+        // Broadcast USER_LIST_UPDATE for the tenant so user list shows "connected"
+        _redisCommand?.send_object([
+          'PUBLISH',
+          'tenant_users_$tId',
+          jsonEncode({'type': 'USER_LIST_UPDATE', 'timestamp': DateTime.now().millisecondsSinceEpoch}),
+        ]);
+
+        // Broadcast TENANT_LIST_UPDATE for admin stats (active connections count)
+        _redisCommand?.send_object([
+          'PUBLISH',
+          'admin_updates',
+          jsonEncode({'type': 'TENANT_LIST_UPDATE', 'timestamp': DateTime.now().millisecondsSinceEpoch}),
+        ]);
+
+        // Notify client auth success if this was an in-band auth
+        channel.sink.add(jsonEncode({'type': 'AUTH_SUCCESS', 'userId': uId}));
+      }
+
+      // If authenticated via middleware (legacy or URL token), init immediately
+      if (userId != null && tenantId != null && role != null) {
+        initializeSession(userId!, tenantId!, role!);
+      }
 
       () async {
         try {
@@ -626,6 +653,58 @@ void main(List<String> args) async {
             try {
               final jsonMap = jsonDecode(rawMessage as String) as Map<String, dynamic>;
               final type = jsonMap['type'] as String?;
+
+              // --- AUTHENTICATION CHECK ---
+              if (clientInfo == null) {
+                if (type == 'auth') {
+                  final token = jsonMap['token'] as String?;
+                  if (token == null) {
+                    JsonLogger.warn('AUTH_FAIL', {'error': 'Missing token in auth message'});
+                    channel.sink.close(4003, 'Missing auth token');
+                    return;
+                  }
+                  try {
+                    // Verify Token Manually
+                    // We need to replicate some middleware logic here or use a helper
+                    // Ideally AuthService shouldn't parse JWTs, but we have 'jwtSecret' in scope.
+                    // We import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart' is NOT imported in this file!
+                    // Wait, line 4 was commented out: // import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
+                    // I NEED TO UNCOMMENT IT TO USE JWT.verify
+                    // Or I can use authService if I modify it?
+                    final jwt = JWT.verify(token, SecretKey(jwtSecret));
+                    final payload = jwt.payload;
+                    final uId = payload['sub'] as String;
+                    final tId = payload['tenant_id'] as String?;
+                    final r = payload['role'] as String;
+
+                    // Strict DB Checks (similar to middleware)
+                    final isActive = await authService.isUserActive(uId);
+                    if (!isActive) throw Exception('User inactive');
+
+                    // We default tenantId to system or throw if missing for structure
+                    // Actually logic suggests tenantId is optional in token?
+                    // But middleware usually enforces tenantId if present.
+
+                    initializeSession(uId, tId ?? 'system', r);
+                    // Continue to process next message?
+                    // The user might send subscribe immediately after in same stream batch?
+                    // No, usually wait for ACK.
+                    continue;
+                  } catch (e) {
+                    JsonLogger.warn('AUTH_FAIL', {'error': e.toString()});
+                    channel.sink.close(4003, 'Invalid auth');
+                    return;
+                  }
+                } else {
+                  JsonLogger.warn('AUTH_REQUIRED', {'message': 'Client sent $type before auth'});
+                  channel.sink.close(4003, 'Authentication required');
+                  return;
+                }
+              }
+
+              // --- LOGGED IN LOGIC ---
+              // At this point, clientInfo is guaranteed to be non-null if we didn't return above.
+              final currentClient = clientInfo!;
 
               ProtocolMessage? message;
               if (type == 'subscribe') {
@@ -639,103 +718,97 @@ void main(List<String> args) async {
                   type: type ?? 'unknown',
                   data: jsonMap['data'] ?? {},
                   timestamp: jsonMap['timestamp'] as int? ?? DateTime.now().millisecondsSinceEpoch,
-                  actorId: userId,
+                  actorId: currentClient.userId,
                 );
               }
 
               await message.map(
                 subscribe: (msg) async {
                   final requestedChannel = msg.channel;
-                  final lastSynced = msg.lastSyncedTimestamp; // Delta Sync timestamp
+                  final lastSynced = msg.lastSyncedTimestamp;
 
                   JsonLogger.info('SUBSCRIBE_ATTEMPT', {
-                    'user_id': userId,
-                    'tenant_id': tenantId,
+                    'user_id': currentClient.userId,
+                    'tenant_id': currentClient.tenantId,
                     'requested_channel': requestedChannel,
                     'last_synced': lastSynced,
                   });
 
                   // ADMIN CHANNELS
                   if (requestedChannel == 'admin_updates') {
-                    if (clientInfo.role != 'superuser') {
-                      JsonLogger.warn('SECURITY_ALERT', {'message': 'Unauthorized admin_updates subscription', 'user_id': userId});
+                    if (currentClient.role != 'superuser') {
+                      JsonLogger.warn('SECURITY_ALERT', {'message': 'Unauthorized admin_updates subscription', 'user_id': currentClient.userId});
                       channel.sink.add(jsonEncode({'error': 'Forbidden channel'}));
                       return;
                     }
-                    // Allow multiple subscriptions (do not remove old one)
-                    clientInfo.channels.add(requestedChannel);
+                    currentClient.channels.add(requestedChannel);
                     final channelList = _channels.putIfAbsent(requestedChannel, () => []);
                     if (!channelList.contains(channel)) channelList.add(channel);
 
-                    // Redis subscribe optimization
                     if (channelList.length == 1) {
                       _redisPubSub?.subscribe([requestedChannel]);
                     }
 
-                    JsonLogger.info('SUBSCRIBE_SUCCESS', {'user_id': userId, 'channel': requestedChannel});
+                    JsonLogger.info('SUBSCRIBE_SUCCESS', {'user_id': currentClient.userId, 'channel': requestedChannel});
                     channel.sink.add(jsonEncode({'type': 'SUBSCRIBE_SUCCESS', 'channel': requestedChannel}));
                     return;
                   }
 
                   if (requestedChannel.startsWith('tenant_users_')) {
                     final targetTenantId = requestedChannel.replaceFirst('tenant_users_', '');
-                    // Only superuser or admin of that tenant
-                    if (clientInfo.role == 'superuser' || (clientInfo.role == 'tenant_admin' && clientInfo.tenantId == targetTenantId)) {
-                      clientInfo.channels.add(requestedChannel);
+                    if (currentClient.role == 'superuser' || (currentClient.role == 'tenant_admin' && currentClient.tenantId == targetTenantId)) {
+                      currentClient.channels.add(requestedChannel);
                       final channelList = _channels.putIfAbsent(requestedChannel, () => []);
                       if (!channelList.contains(channel)) channelList.add(channel);
 
-                      // Redis subscribe optimization
                       if (channelList.length == 1) {
                         _redisPubSub?.subscribe([requestedChannel]);
                       }
 
-                      JsonLogger.info('SUBSCRIBE_SUCCESS', {'user_id': userId, 'channel': requestedChannel});
+                      JsonLogger.info('SUBSCRIBE_SUCCESS', {'user_id': currentClient.userId, 'channel': requestedChannel});
                       channel.sink.add(jsonEncode({'type': 'SUBSCRIBE_SUCCESS', 'channel': requestedChannel}));
                       return;
                     } else {
-                      JsonLogger.warn('SECURITY_ALERT', {'message': 'Unauthorized tenant_users subscription', 'user_id': userId, 'target': targetTenantId});
+                      JsonLogger.warn('SECURITY_ALERT', {
+                        'message': 'Unauthorized tenant_users subscription',
+                        'user_id': currentClient.userId,
+                        'target': targetTenantId,
+                      });
                       channel.sink.add(jsonEncode({'error': 'Forbidden channel'}));
                       return;
                     }
                   }
 
                   // STRICT TENANT ISOLATION
-                  if (requestedChannel == tenantId) {
-                    clientInfo.channels.add(requestedChannel);
+                  if (requestedChannel == currentClient.tenantId) {
+                    currentClient.channels.add(requestedChannel);
                     final channelList = _channels.putIfAbsent(requestedChannel, () => []);
                     if (!channelList.contains(channel)) channelList.add(channel);
 
-                    // If this is the first client, subscribe Redis (optimization)
                     if (channelList.length == 1) {
                       _redisPubSub?.subscribe([requestedChannel]);
-                      JsonLogger.info('REDIS_SUBSCRIBE', {'channel': requestedChannel});
                     }
 
-                    JsonLogger.info('SUBSCRIBE_SUCCESS', {'user_id': userId, 'tenant_id': tenantId, 'channel': requestedChannel});
+                    JsonLogger.info('SUBSCRIBE_SUCCESS', {'user_id': currentClient.userId, 'tenant_id': currentClient.tenantId, 'channel': requestedChannel});
                     channel.sink.add(jsonEncode({'type': 'SUBSCRIBE_SUCCESS', 'channel': requestedChannel}));
 
                     try {
-                      final crdt = await _getTenantCrdt(tenantId);
+                      final crdt = await _getTenantCrdt(currentClient.tenantId);
 
-                      // Build partial query if delta sync
                       String whereClause = '';
                       if (lastSynced != null && lastSynced > 0) {
                         whereClause = 'WHERE (last_updated > $lastSynced OR deleted_at > $lastSynced)';
                         JsonLogger.info('DELTA_SYNC_QUERY', {'where': whereClause, 'lastSynced': lastSynced});
                       } else {
-                        // Full load: ignore deleted, ignore timestamp
                         whereClause = 'WHERE (is_deleted IS FALSE OR is_deleted = false)';
                         JsonLogger.info('FULL_SYNC_QUERY', {'where': whereClause});
                       }
 
                       // 1. Send Tasks
-                      final tasks = await crdt.query('SELECT * FROM "$tenantId".tasks $whereClause');
-                      JsonLogger.info('SYNC_SENDING_TASKS', {'count': tasks.length, 'tenant_id': tenantId});
+                      final tasks = await crdt.query('SELECT * FROM "${currentClient.tenantId}".tasks $whereClause');
+                      JsonLogger.info('SYNC_SENDING_TASKS', {'count': tasks.length, 'tenant_id': currentClient.tenantId});
                       for (final row in tasks) {
                         final isDeleted = row['is_deleted'] == true || row['is_deleted'] == 1;
-                        // If full sync, we filtered deleted in SQL. If delta sync, we need to send deletions.
-                        // Check explicit deleted_at logic if available, or fallback to is_deleted.
 
                         final cleanData = {
                           'id': row['id']?.toString(),
@@ -750,12 +823,10 @@ void main(List<String> args) async {
                         final envelope = {
                           'type': isDeleted ? 'DELETE_TASK' : 'UPDATE_TASK',
                           'data': {'data': cleanData, 'gantt_type': row['gantt_type']},
-                          // If deleting, provide ID in data wrapper so client knows what to delete
                           'timestamp': row['last_updated'] ?? DateTime.now().millisecondsSinceEpoch,
                           'actorId': 'server-sync',
                         };
                         if (isDeleted) {
-                          // Ensure DELETE_TASK has correct structure for client
                           envelope['data'] = {
                             'data': {'id': row['id']?.toString()},
                           };
@@ -764,7 +835,7 @@ void main(List<String> args) async {
                       }
 
                       // 2. Send Dependencies
-                      final allDeps = await crdt.query('SELECT * FROM "$tenantId".dependencies $whereClause');
+                      final allDeps = await crdt.query('SELECT * FROM "${currentClient.tenantId}".dependencies $whereClause');
                       for (final record in allDeps) {
                         final isDeleted = (record['is_deleted'] == true || record['is_deleted'] == 1);
 
@@ -785,7 +856,7 @@ void main(List<String> args) async {
                       }
 
                       // 3. Send Resources
-                      final allResources = await crdt.query('SELECT * FROM "$tenantId".resources $whereClause');
+                      final allResources = await crdt.query('SELECT * FROM "${currentClient.tenantId}".resources $whereClause');
                       for (final record in allResources) {
                         final isDeleted = (record['is_deleted'] == true || record['is_deleted'] == 1);
 
@@ -813,12 +884,15 @@ void main(List<String> args) async {
                         channel.sink.add(jsonEncode(envelope));
                       }
                     } catch (e) {
-                      JsonLogger.error('DB_ERROR', {'error': e.toString(), 'tenant_id': tenantId});
+                      JsonLogger.error('SYNC_ERROR', {'error': e.toString(), 'tenant_id': currentClient.tenantId});
+                      channel.sink.add(jsonEncode({'error': 'Sync failed'}));
                     }
-                  } else {
-                    JsonLogger.warn('SECURITY_ALERT', {'message': 'Cross-tenant subscription attempt', 'user_id': userId});
-                    channel.sink.add(jsonEncode({'error': 'Forbidden channel'}));
+                    return;
                   }
+
+                  // If we got here, unknown channel
+                  JsonLogger.warn('UNKNOWN_CHANNEL', {'channel': requestedChannel});
+                  channel.sink.add(jsonEncode({'error': 'Forbidden channel'}));
                 },
                 operation: (msg) async {
                   // NOTE: Operations are handled against the client's TENANT, not necessarily the channel.
@@ -830,19 +904,19 @@ void main(List<String> args) async {
                   // Admin ops (if any) might go elsewhere.
                   // Assuming Gantt ops => tenantId channel.
 
-                  final targetChannel = clientInfo.tenantId; // Default for operations to tenant
+                  final targetChannel = currentClient.tenantId; // Default for operations to tenant
 
                   JsonLogger.info('OPERATION_RECEIVED', {
                     'type': msg.type,
-                    'user_id': userId,
-                    'tenant_id': tenantId,
+                    'user_id': currentClient.userId,
+                    'tenant_id': currentClient.tenantId,
                     'data_summary': msg.data.toString().substring(0, (msg.data.toString().length < 100 ? msg.data.toString().length : 100)),
                   });
 
                   // Ensure user is subscribed to their tenant? Not strictly required if we force publish target.
 
                   try {
-                    final crdt = await _getTenantCrdt(clientInfo.tenantId);
+                    final crdt = await _getTenantCrdt(currentClient.tenantId);
                     final type = msg.type;
 
                     if (type == 'INSERT_DEPENDENCY') {
@@ -855,7 +929,7 @@ void main(List<String> args) async {
                       final depType = data['dependency_type'] ?? data['dependencyType'] ?? data['type'] ?? 'finishToStart';
 
                       await crdt.execute(
-                        'INSERT INTO "${clientInfo.tenantId}".dependencies (predecessor_task_id, successor_task_id, dependency_type, last_updated) VALUES (?, ?, ?, ?) ON CONFLICT (predecessor_task_id, successor_task_id) DO UPDATE SET dependency_type = EXCLUDED.dependency_type, last_updated = EXCLUDED.last_updated, is_deleted = false, deleted_at = NULL',
+                        'INSERT INTO "${currentClient.tenantId}".dependencies (predecessor_task_id, successor_task_id, dependency_type, last_updated) VALUES (?, ?, ?, ?) ON CONFLICT (predecessor_task_id, successor_task_id) DO UPDATE SET dependency_type = EXCLUDED.dependency_type, last_updated = EXCLUDED.last_updated, is_deleted = false, deleted_at = NULL',
                         [pred, succ, depType, msg.timestamp],
                       );
                     } else if (type == 'DELETE_DEPENDENCY') {
@@ -867,24 +941,24 @@ void main(List<String> args) async {
                       final succ = data['successorTaskId'];
 
                       await crdt.execute(
-                        'UPDATE "${clientInfo.tenantId}".dependencies SET is_deleted = true, deleted_at = ?, last_updated = ? WHERE predecessor_task_id = ? AND successor_task_id = ?',
+                        'UPDATE "${currentClient.tenantId}".dependencies SET is_deleted = true, deleted_at = ?, last_updated = ? WHERE predecessor_task_id = ? AND successor_task_id = ?',
                         [msg.timestamp, msg.timestamp, pred, succ],
                       );
                     } else if (type == 'RESET_DATA') {
                       try {
-                        await crdt.execute('DELETE FROM "${clientInfo.tenantId}".dependencies');
-                        await crdt.execute('DELETE FROM "${clientInfo.tenantId}".tasks');
-                        JsonLogger.info('DATA_RESET', {'tenant_id': clientInfo.tenantId, 'user_id': userId});
+                        await crdt.execute('DELETE FROM "${currentClient.tenantId}".dependencies');
+                        await crdt.execute('DELETE FROM "${currentClient.tenantId}".tasks');
+                        JsonLogger.info('DATA_RESET', {'tenant_id': currentClient.tenantId, 'user_id': currentClient.userId});
 
                         // Redis Publish RESET_DATA
                         final resetMsg = {
                           'type': 'RESET_DATA',
                           'data': {},
                           'timestamp': DateTime.now().millisecondsSinceEpoch,
-                          'actorId': userId,
-                          'originConnectionId': clientInfo.connectionId,
+                          'actorId': currentClient.userId,
+                          'originConnectionId': currentClient.connectionId,
                         };
-                        _redisCommand?.send_object(['PUBLISH', clientInfo.tenantId, jsonEncode(resetMsg)]);
+                        _redisCommand?.send_object(['PUBLISH', currentClient.tenantId, jsonEncode(resetMsg)]);
 
                         // Local broadcast handled by Redis Listener loop?
                         // Redis listener will hear this and broadcast to local clients (including other tabs of same user).
@@ -905,7 +979,7 @@ void main(List<String> args) async {
                           */
                         // Identical logic. The sender is excluded.
                       } catch (e) {
-                        JsonLogger.error('RESET_FAILED', {'error': e.toString(), 'tenant_id': clientInfo.tenantId});
+                        JsonLogger.error('RESET_FAILED', {'error': e.toString(), 'tenant_id': currentClient.tenantId});
                       }
                     } else if (type == 'UPDATE_TASK' || type == 'INSERT_TASK') {
                       final payload = msg.data;
@@ -918,14 +992,14 @@ void main(List<String> args) async {
 
                       if (innerData['id'] != null) {
                         final name = innerData['name'];
-                        final start = innerData['start_date'];
-                        final end = innerData['end_date'];
-                        final parent = innerData['parent_id'];
-                        final ganttType = innerData['gantt_type'] ?? innerData['type'] ?? 'task';
+                        final start = innerData['start_date'] ?? innerData['startDate'];
+                        final end = innerData['end_date'] ?? innerData['endDate'];
+                        final parent = innerData['parent_id'] ?? innerData['parentId'];
+                        final ganttType = innerData['gantt_type'] ?? innerData['ganttType'] ?? innerData['type'] ?? 'task';
 
                         await crdt.execute(
                           '''
-                            INSERT INTO "${clientInfo.tenantId}".tasks (id, name, start_date, end_date, parent_id, gantt_type, last_updated)
+                            INSERT INTO "${currentClient.tenantId}".tasks (id, name, start_date, end_date, parent_id, gantt_type, last_updated)
                             VALUES (?, ?, ?, ?, ?, ?, ?)
                             ON CONFLICT (id) DO UPDATE SET
                               name = EXCLUDED.name,
@@ -953,11 +1027,11 @@ void main(List<String> args) async {
                         final name = innerData['name'];
                         final parent = innerData['parent_id'] ?? innerData['parentId'];
                         final expanded = innerData['is_expanded'] ?? innerData['isExpanded'] ?? true;
-                        final ganttType = innerData['gantt_type'];
+                        final ganttType = innerData['gantt_type'] ?? payload['gantt_type'] ?? innerData['ganttType'] ?? 'human';
 
                         await crdt.execute(
                           '''
-                            INSERT INTO "${clientInfo.tenantId}".resources (id, name, parent_id, is_expanded, gantt_type, last_updated)
+                            INSERT INTO "${currentClient.tenantId}".resources (id, name, parent_id, is_expanded, gantt_type, last_updated)
                             VALUES (?, ?, ?, ?, ?, ?)
                             ON CONFLICT (id) DO UPDATE SET
                               name = EXCLUDED.name,
@@ -988,7 +1062,7 @@ void main(List<String> args) async {
                         if (type == 'DELETE_RESOURCE') {
                           tableName = 'resources';
                         }
-                        final table = '"${clientInfo.tenantId}".$tableName';
+                        final table = '"${currentClient.tenantId}".$tableName';
 
                         await crdt.execute('UPDATE $table SET is_deleted = true, deleted_at = ?, last_updated = ? WHERE id = ?', [
                           msg.timestamp,
@@ -997,7 +1071,7 @@ void main(List<String> args) async {
                         ]);
                       }
                     } else if (type == 'CURSOR_MOVE') {
-                      // However, to be explicit and avoid "UNKNOWN_OPERATION" log, we should have an empty block.
+                      // Silent
                     } else if (type == 'GHOST_UPDATE' || type == 'PRESENCE_UPDATE') {
                       // Just broadcast
                     } else {
@@ -1011,7 +1085,7 @@ void main(List<String> args) async {
                         'data': (msg as dynamic).data,
                         'timestamp': (msg as dynamic).timestamp,
                         'actorId': (msg as dynamic).actorId,
-                        'originConnectionId': clientInfo.connectionId,
+                        'originConnectionId': currentClient.connectionId,
                       };
 
                       if (_redisCommand != null) {
@@ -1029,7 +1103,7 @@ void main(List<String> args) async {
                       }
                     }
                   } catch (e) {
-                    JsonLogger.error('DB_WRITE_ERROR', {'error': e.toString(), 'tenant_id': clientInfo.tenantId});
+                    JsonLogger.error('DB_WRITE_ERROR', {'error': e.toString(), 'tenant_id': currentClient.tenantId});
                   }
                 },
                 error: (_) async {},
@@ -1041,35 +1115,38 @@ void main(List<String> args) async {
         } catch (e) {
           JsonLogger.error('STREAM_ERROR', {'error': e.toString()});
         } finally {
-          for (final channelId in clientInfo.channels) {
-            final list = _channels[channelId];
-            if (list != null) {
-              list.remove(channel);
-              if (list.isEmpty) {
-                _redisPubSub?.unsubscribe([channelId]);
-                JsonLogger.info('REDIS_UNSUBSCRIBE', {'channel': channelId});
-                _channels.remove(channelId);
+          if (clientInfo != null) {
+            final currentClient = clientInfo!;
+            for (final channelId in currentClient.channels) {
+              final list = _channels[channelId];
+              if (list != null) {
+                list.remove(channel);
+                if (list.isEmpty) {
+                  _redisPubSub?.unsubscribe([channelId]);
+                  JsonLogger.info('REDIS_UNSUBSCRIBE', {'channel': channelId});
+                  _channels.remove(channelId);
+                }
               }
             }
+            _clientInfos.remove(channel);
+            JsonLogger.info('CLIENT_DISCONNECTED', {'user_id': currentClient.userId, 'tenant_id': currentClient.tenantId});
+
+            // Broadcast USER_LIST_UPDATE
+            _redisCommand?.send_object([
+              'PUBLISH',
+              'tenant_users_${currentClient.tenantId}',
+              jsonEncode({'type': 'USER_LIST_UPDATE', 'timestamp': DateTime.now().millisecondsSinceEpoch}),
+            ]);
+
+            // Broadcast TENANT_LIST_UPDATE
+            _redisCommand?.send_object([
+              'PUBLISH',
+              'admin_updates',
+              jsonEncode({'type': 'TENANT_LIST_UPDATE', 'timestamp': DateTime.now().millisecondsSinceEpoch}),
+            ]);
           }
-          _clientInfos.remove(channel);
-          JsonLogger.info('CLIENT_DISCONNECTED', {'user_id': userId, 'tenant_id': tenantId});
-
-          // Broadcast USER_LIST_UPDATE
-          _redisCommand?.send_object([
-            'PUBLISH',
-            'tenant_users_$tenantId',
-            jsonEncode({'type': 'USER_LIST_UPDATE', 'timestamp': DateTime.now().millisecondsSinceEpoch}),
-          ]);
-
-          // Broadcast TENANT_LIST_UPDATE
-          _redisCommand?.send_object([
-            'PUBLISH',
-            'admin_updates',
-            jsonEncode({'type': 'TENANT_LIST_UPDATE', 'timestamp': DateTime.now().millisecondsSinceEpoch}),
-          ]);
         }
-      }();
+      }(); // Execute immediately
     }, pingInterval: const Duration(seconds: 20));
 
     return handler(request);

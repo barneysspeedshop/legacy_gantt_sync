@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: dart_user
+      POSTGRES_PASSWORD: dart_password
+      POSTGRES_DB: legacy_gantt
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dart_user -d legacy_gantt"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager # Pins DB to manager so it finds the volume
+      restart_policy:
+        condition: on-failure
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+  server:
+    image: legacy_gantt_server:latest # Uses the image you built in Step 1
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: db
+      REDIS_HOST: redis
+      DB_NAME: legacy_gantt
+      DB_USER: dart_user
+      DB_PASS: dart_password
+      DB_PORT: 5432
+      LEGACY_GANTT_SYNC_PORT: 8080
+      JWT_SECRET: "some_super_secret_key"
+      SUPERUSER_USERNAME: "superuser"
+      SUPERUSER_PASSWORD: "some_password"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      # Swarm ignores 'condition: service_healthy', so we just list dependencies
+    depends_on:
+      - db
+      - redis
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    configs:
+      - source: nginx_conf
+        target: /etc/nginx/nginx.conf
+    # If using secrets for certs, uncomment below:
+    # secrets:
+    #   - source: site_key
+    #     target: /etc/nginx/certs/site.key
+    #   - source: site_cert
+    #     target: /etc/nginx/certs/site.crt
+    # If sticking to volume mounts for certs (easier for dev), ensure full paths:
+    volumes:
+       - ./nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      - server
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+volumes:
+  pgdata:
+  redis_data:
+
+configs:
+  nginx_conf:
+    external: true
+
+# secrets:
+#   site_key:
+#     external: true
+#   site_cert:
+#     external: true

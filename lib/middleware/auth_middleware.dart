@@ -28,6 +28,10 @@ Middleware authMiddleware(String secret, AuthService authService) {
       token ??= request.url.queryParameters['token'];
 
       if (token == null) {
+        // Allow WebSocket handshake to proceed without token (will authenticate in-band)
+        if (request.url.path == 'ws') {
+          return innerHandler(request);
+        }
         return Response.forbidden('Missing authentication token');
       }
 
@@ -49,13 +53,7 @@ Middleware authMiddleware(String secret, AuthService authService) {
         }
 
         // Pass payload downstream via context
-        final updatedRequest = request.change(
-          context: {
-            'auth.userId': userId,
-            'auth.tenantId': tenantId,
-            'auth.role': payload['role'],
-          },
-        );
+        final updatedRequest = request.change(context: {'auth.userId': userId, 'auth.tenantId': tenantId, 'auth.role': payload['role']});
 
         return innerHandler(updatedRequest);
       } on JWTExpiredException {

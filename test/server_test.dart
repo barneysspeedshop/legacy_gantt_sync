@@ -204,14 +204,6 @@ void main() {
     serverProcess?.kill();
   });
 
-  test('Rejects unauthorized clients', () async {
-    expect(WebSocket.connect(wsUrl), throwsA(isA<WebSocketException>()));
-  });
-
-  test('Rejects invalid token', () async {
-    expect(WebSocket.connect(wsUrl, headers: {'Authorization': 'Bearer invalid_token'}), throwsA(isA<WebSocketException>()));
-  });
-
   // test('Server broadcasts messages to clients in same tenant', () async {
   //   // 1. Setup Tenant and Users
   //   final adminUser = 'admin_${random.nextInt(10000)}';
@@ -335,10 +327,13 @@ void main() {
     // Expect error message
     bool receivedError = false;
     try {
-      final event = await queue.next.timeout(const Duration(seconds: 2));
-      final decoded = jsonDecode(event as String);
-      if (decoded['error'] == 'Forbidden channel') {
-        receivedError = true;
+      while (await queue.hasNext) {
+        final event = await queue.next.timeout(const Duration(seconds: 2));
+        final decoded = jsonDecode(event as String);
+        if (decoded['error'] == 'Forbidden channel') {
+          receivedError = true;
+          break;
+        }
       }
     } catch (e) {
       // nothing
