@@ -48,6 +48,8 @@ jobs:
           flutter-version: '3.47.2'
           cache: true
       - uses: dtolnay/rust-toolchain@2b28c52cef68d77e9a4de0b428559db37728c04f # 1.93.0
+        with:
+          components: rustfmt, clippy
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version: stable
