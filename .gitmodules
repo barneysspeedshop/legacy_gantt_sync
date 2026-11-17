@@ -1,0 +1,19 @@
+[submodule "legacy_gantt_chart"]
+	path = legacy_gantt_chart
+	url = https://www.github.com/barneysspeedshop/legacy_gantt_chart
+[submodule "legacy_timeline_scrubber"]
+	path = legacy_timeline_scrubber
+	url = https://www.github.com/barneysspeedshop/legacy_timeline_scrubber
+[submodule "legacy_tree_grid"]
+	path = legacy_tree_grid
+	url = https://www.github.com/barneysspeedshop/legacy_tree_grid
+[submodule "legacy_pert_chart"]
+	path = legacy_pert_chart
+	url = https://github.com/barneysspeedshop/legacy_pert_chart.git
+[submodule "legacy_gantt_protocol"]
+	path = legacy_gantt_protocol
+	url = https://github.com/barneysspeedshop/legacy_gantt_protocol.git
+
+[submodule "legacy_gantt_plugin"]
+	path = legacy_gantt_plugin
+	url = https://github.com/barneysspeedshop/legacy_gantt_plugin.git

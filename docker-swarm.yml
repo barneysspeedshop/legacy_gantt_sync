@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: dart_user
+      POSTGRES_DB: legacy_gantt
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+
+  redis:
+    image: redis:7
+    # SECURITY: Ports are removed so only internal services can reach it
+    command: redis-server --requirepass ${REDIS_PASSWORD:?Set REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+  server:
+    image: legacy_gantt_server:latest
+    # SECURITY: Ports REMOVED. Only Nginx talks to this.
+    environment:
+      DB_HOST: db
+      REDIS_HOST: redis
+      DB_NAME: legacy_gantt
+      DB_USER: dart_user
+      DB_PORT: 5432
+      LEGACY_GANTT_SYNC_PORT: 8080
+      SUPERUSER_USERNAME: ${SUPERUSER_USERNAME}
+      SUPERUSER_PASSWORD: ${SUPERUSER_PASSWORD}
+      DB_SSL_MODE: ${DB_SSL_MODE:-disable}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD}
+      
+      # Point the entrypoint script to the mounted secret files
+      DB_PASS_FILE: /run/secrets/db_password
+      JWT_SECRET_FILE: /run/secrets/jwt_secret
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    depends_on:
+      - db
+      - redis
+    secrets:
+      - db_password
+      - jwt_secret
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    configs:
+      - source: nginx_conf
+        target: /etc/nginx/nginx.conf
+    volumes:
+       - ./nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      - server
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+volumes:
+  pgdata:
+  redis_data:
+
+configs:
+  nginx_conf:
+    external: true
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+  jwt_secret:
+    file: ./secrets/jwt_secret.txt

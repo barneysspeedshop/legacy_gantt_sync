@@ -1,0 +1,27 @@
+name: canonical_sync_integration
+publish_to: none
+environment:
+  sdk: ^3.10.0
+dependencies:
+  async: ^2.13.0
+  example:
+    path: ../../legacy_gantt_chart/example
+  http: ^1.6.0
+  legacy_gantt_protocol:
+    path: ../../legacy_gantt_protocol
+  sqlite_crdt: ^3.0.0
+  sqflite_common_ffi: ^2.4.0
+  web_socket_channel: ^3.0.3
+dev_dependencies:
+  lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+dependency_overrides:
+  legacy_gantt_chart:
+    path: ../../legacy_gantt_chart
+  legacy_gantt_protocol:
+    path: ../../legacy_gantt_protocol
+  legacy_timeline_scrubber:
+    path: ../../legacy_timeline_scrubber
+flutter:
+  uses-material-design: true

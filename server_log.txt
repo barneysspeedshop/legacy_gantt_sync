@@ -1,0 +1,43 @@
+nohup: ignoring input
+{"timestamp":"2025-12-23T23:39:45.186023","level":"INFO","event":"AUTH_DB_CONNECTING","data":{}}
+{"timestamp":"2025-12-23T23:39:45.377500","level":"INFO","event":"AUTH_DB_INIT","data":{"status":"success"}}
+{"timestamp":"2025-12-23T23:39:45.475343","level":"INFO","event":"SUPERUSER_SEEDED","data":{"username":"superuser"}}
+{"timestamp":"2025-12-23T23:39:45.843798","level":"INFO","event":"DB_INIT_SUCCESS","data":{}}
+{"timestamp":"2025-12-23T23:39:45.848836","level":"INFO","event":"REDIS_PUB_CONNECTED","data":{"host":"localhost"}}
+{"timestamp":"2025-12-23T23:39:45.851836","level":"INFO","event":"REDIS_SUB_CONNECTED","data":{"host":"localhost"}}
+{"timestamp":"2025-12-23T23:39:45.882148","level":"INFO","event":"SERVER_START","data":{"host":"0.0.0.0","port":8080}}
+2025-12-23T23:40:12.806705  0:00:00.173513 POST    [200] /auth/login
+{"timestamp":"2025-12-23T23:40:13.014375","level":"WARN","event":"AUTH_DB_RETRY","data":{"error":"Severity.error 23505: duplicate key value violates unique constraint \"tenants_pkey\" detail: Key (id)=(legacy) already exists. table: tenants constraint tenants_pkey"}}
+{"timestamp":"2025-12-23T23:40:13.014583","level":"INFO","event":"AUTH_DB_CONNECTING","data":{}}
+{"timestamp":"2025-12-23T23:40:13.042707","level":"ERROR","event":"REGISTER_ERROR","data":{"error":"Severity.error 23505: duplicate key value violates unique constraint \"tenants_pkey\" detail: Key (id)=(legacy) already exists. table: tenants constraint tenants_pkey"}}
+2025-12-23T23:40:12.999861  0:00:00.043294 POST    [500] /api/admin/tenants
+2025-12-23T23:40:49.971494  0:00:00.185095 POST    [200] /auth/login
+{"timestamp":"2025-12-23T23:40:50.385557","level":"INFO","event":"CLIENT_CONNECTED","data":{"user_id":"patrick@legacy","tenant_id":"legacy"}}
+{"timestamp":"2025-12-23T23:40:50.391471","level":"INFO","event":"SUBSCRIBE_ATTEMPT","data":{"user_id":"patrick@legacy","tenant_id":"legacy","requested_channel":"legacy","last_synced":1766550706442}}
+{"timestamp":"2025-12-23T23:40:50.392187","level":"INFO","event":"SUBSCRIBE_SUCCESS","data":{"user_id":"patrick@legacy","channel":"legacy"}}
+{"timestamp":"2025-12-23T23:40:50.395020","level":"ERROR","event":"REDIS_MSG_FORMAT_ERROR","data":{"error":"type 'int' is not a subtype of type 'String' in type cast","raw":["subscribe","legacy",1]}}
+{"timestamp":"2025-12-23T23:40:50.463528","level":"INFO","event":"DELTA_SYNC_QUERY","data":{"where":"WHERE tenant_id = ? AND (last_updated > ? OR deleted_at > ?)","lastSynced":1766550706442,"tenantId":"legacy"}}
+{"timestamp":"2025-12-23T23:40:55.986176","level":"INFO","event":"BATCH_UPDATE_RECEIVED","data":{"count":184,"user_id":"patrick@legacy","tenant_id":"legacy"}}
+{"timestamp":"2025-12-23T23:40:55.991301","level":"INFO","event":"RESET_DATA_START","data":{"tenantId":"legacy"}}
+{"timestamp":"2025-12-23T23:40:56.023605","level":"INFO","event":"RESET_DATA_COMPLETE","data":{"tenantId":"legacy"}}
+{"timestamp":"2025-12-23T23:40:56.771827","level":"INFO","event":"BATCH_UPDATE_RECEIVED","data":{"count":171,"user_id":"patrick@legacy","tenant_id":"legacy"}}
+{"timestamp":"2025-12-23T23:40:59.413460","level":"INFO","event":"BATCH_UPDATE_RECEIVED","data":{"count":19,"user_id":"patrick@legacy","tenant_id":"legacy"}}
+{"timestamp":"2025-12-23T23:41:01.271199","level":"INFO","event":"BATCH_UPDATE_RECEIVED","data":{"count":19,"user_id":"patrick@legacy","tenant_id":"legacy"}}
+{"timestamp":"2025-12-23T23:41:03.375537","level":"INFO","event":"BATCH_UPDATE_RECEIVED","data":{"count":19,"user_id":"patrick@legacy","tenant_id":"legacy"}}
+{"timestamp":"2025-12-23T23:41:09.474189","level":"INFO","event":"BATCH_UPDATE_RECEIVED","data":{"count":19,"user_id":"patrick@legacy","tenant_id":"legacy"}}
+{"timestamp":"2025-12-23T23:41:11.853426","level":"INFO","event":"BATCH_UPDATE_RECEIVED","data":{"count":19,"user_id":"patrick@legacy","tenant_id":"legacy"}}
+{"timestamp":"2025-12-23T23:41:15.211858","level":"INFO","event":"BATCH_UPDATE_RECEIVED","data":{"count":19,"user_id":"patrick@legacy","tenant_id":"legacy"}}
+{"timestamp":"2025-12-23T23:50:29.427457","level":"INFO","event":"BATCH_UPDATE_RECEIVED","data":{"count":184,"user_id":"patrick@legacy","tenant_id":"legacy"}}
+{"timestamp":"2025-12-23T23:50:29.429800","level":"INFO","event":"RESET_DATA_START","data":{"tenantId":"legacy"}}
+{"timestamp":"2025-12-23T23:50:29.449507","level":"INFO","event":"RESET_DATA_COMPLETE","data":{"tenantId":"legacy"}}
+{"timestamp":"2025-12-23T23:50:30.524298","level":"INFO","event":"BATCH_UPDATE_RECEIVED","data":{"count":171,"user_id":"patrick@legacy","tenant_id":"legacy"}}
+{"timestamp":"2025-12-23T23:50:32.253561","level":"INFO","event":"BATCH_UPDATE_RECEIVED","data":{"count":19,"user_id":"patrick@legacy","tenant_id":"legacy"}}
+{"timestamp":"2025-12-23T23:50:34.795438","level":"INFO","event":"BATCH_UPDATE_RECEIVED","data":{"count":19,"user_id":"patrick@legacy","tenant_id":"legacy"}}
+{"timestamp":"2025-12-23T23:50:47.707263","level":"INFO","event":"CLIENT_DISCONNECTED","data":{"user_id":"patrick@legacy","tenant_id":"legacy"}}
+{"timestamp":"2025-12-23T23:50:47.708961","level":"ERROR","event":"REDIS_MSG_FORMAT_ERROR","data":{"error":"type 'int' is not a subtype of type 'String' in type cast","raw":["unsubscribe","legacy",0]}}
+2025-12-31T17:43:06.835293  0:00:00.330413 POST    [200] /auth/login
+{"timestamp":"2025-12-31T17:43:07.273035","level":"INFO","event":"CLIENT_CONNECTED","data":{"user_id":"patrick@legacy","tenant_id":"legacy"}}
+{"timestamp":"2025-12-31T17:43:07.317667","level":"ERROR","event":"MSG_PROCESSING_ERROR","data":{"error":"type 'String' is not a subtype of type 'int?' in type cast"}}
+{"timestamp":"2025-12-31T17:43:43.663752","level":"INFO","event":"CLIENT_DISCONNECTED","data":{"user_id":"patrick@legacy","tenant_id":"legacy"}}
+Unhandled exception:
+stream is closed

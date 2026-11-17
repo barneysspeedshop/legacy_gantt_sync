@@ -1,0 +1,849 @@
+Launching lib/main.dart on Linux in debug mode...
+✓ Built build/linux/x64/debug/bundle/example
+
+** (com.example.example:3500311): WARNING **: 14:35:01.534: Unable to retrieve framework response: Message is not valid JSON
+
+** (com.example.example:3500311): WARNING **: 14:35:01.648: Unable to retrieve framework response: Message is not valid JSON
+Connecting to VM Service at ws://127.0.0.1:38513/VmguppiT5y0=/ws
+Connected to the VM Service.
+
+════════ Exception caught by services library ══════════════════════════════════
+The following assertion was thrown during a platform message callback:
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+
+Either the assertion indicates an error in the framework itself, or we should provide substantially more information in this error message to help you determine and fix the underlying cause.
+In either case, please report this assertion by filing a bug on GitHub:
+  https://github.com/flutter/flutter/issues/new?template=02_bug.yml
+
+When the exception was thrown, this was the stack:
+#2      HardwareKeyboard._assertEventIsRegular.<anonymous closure> (package:flutter/src/services/hardware_keyboard.dart:522:11)
+#3      HardwareKeyboard._assertEventIsRegular (package:flutter/src/services/hardware_keyboard.dart:536:6)
+#4      HardwareKeyboard.handleKeyEvent (package:flutter/src/services/hardware_keyboard.dart:660:5)
+#5      KeyEventManager.handleRawKeyMessage (package:flutter/src/services/hardware_keyboard.dart:1188:37)
+#6      BasicMessageChannel.setMessageHandler.<anonymous closure> (package:flutter/src/services/platform_channel.dart:258:49)
+#7      _DefaultBinaryMessenger.setMessageHandler.<anonymous closure> (package:flutter/src/services/binding.dart:663:35)
+#8      _invoke2 (dart:ui/hooks.dart:388:13)
+#9      _ChannelCallbackRecord.invoke (dart:ui/channel_buffers.dart:45:5)
+#10     _Channel._drainStep (dart:ui/channel_buffers.dart:229:31)
+(elided 4 frames from class _AssertionError and dart:async)
+════════════════════════════════════════════════════════════════════════════════
+
+** (com.example.example:3500311): WARNING **: 14:35:04.505: Unable to retrieve framework response: Message is not valid JSON
+OfflineClient: GanttDb initialized
+LocalGanttRepository: Read task assignment-job-0-0, lastUpdatedBy: local-user
+LocalGanttRepository: Read task summary-task-person-0, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-0-1, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-0-2, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-extra, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-0-3, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-0-4, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-0-5, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-0-6, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-0-7, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-0-8, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-0-9, lastUpdatedBy: local-user
+LocalGanttRepository: Read task milestone_demo_1, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-0-10, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-0-11, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-0-12, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-0-13, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-0-14, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-0-15, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-1-0, lastUpdatedBy: local-user
+LocalGanttRepository: Read task summary-task-person-1, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-1-1, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-1-2, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-1-3, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-1-4, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-1-5, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-1-6, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-1-7, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-1-8, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-1-9, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-1-10, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-1-11, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-1-12, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-1-13, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-1-14, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-1-15, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-2-0, lastUpdatedBy: local-user
+LocalGanttRepository: Read task summary-task-person-2, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-2-1, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-2-2, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-2-3, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-2-4, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-2-5, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-2-6, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-2-7, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-2-8, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-2-9, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-2-10, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-2-11, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-2-12, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-2-13, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-2-14, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-2-15, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-3-0, lastUpdatedBy: local-user
+LocalGanttRepository: Read task summary-task-person-3, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-3-1, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-3-2, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-3-3, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-3-4, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-3-5, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-3-6, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-3-7, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-3-8, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-3-9, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-3-10, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-3-11, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-3-12, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-3-13, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-3-14, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-3-15, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-4-0, lastUpdatedBy: local-user
+LocalGanttRepository: Read task summary-task-person-4, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-4-1, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-4-2, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-4-3, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-4-4, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-4-5, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-4-6, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-4-7, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-4-8, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-4-9, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-4-10, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-4-11, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-4-12, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-4-13, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-4-14, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-4-15, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-5-0, lastUpdatedBy: local-user
+LocalGanttRepository: Read task summary-task-person-5, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-5-1, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-5-2, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-5-3, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-5-4, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-5-5, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-5-6, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-5-7, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-5-8, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-5-9, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-5-10, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-5-11, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-5-12, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-5-13, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-5-14, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-5-15, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-6-0, lastUpdatedBy: local-user
+LocalGanttRepository: Read task summary-task-person-6, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-6-1, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-6-2, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-6-3, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-6-4, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-6-5, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-6-6, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-6-7, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-6-8, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-6-9, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-6-10, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-6-11, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-6-12, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-6-13, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-6-14, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-6-15, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-7-0, lastUpdatedBy: local-user
+LocalGanttRepository: Read task summary-task-person-7, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-7-1, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-7-2, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-7-3, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-7-4, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-7-5, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-7-6, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-7-7, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-7-8, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-7-9, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-7-10, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-7-11, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-7-12, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-7-13, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-7-14, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-7-15, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-8-0, lastUpdatedBy: local-user
+LocalGanttRepository: Read task summary-task-person-8, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-8-1, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-8-2, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-8-3, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-8-4, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-8-5, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-8-6, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-8-7, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-8-8, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-8-9, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-8-10, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-8-11, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-8-12, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-8-13, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-8-14, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-8-15, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-9-0, lastUpdatedBy: local-user
+LocalGanttRepository: Read task summary-task-person-9, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-9-1, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-9-2, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-9-3, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-9-4, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-9-5, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-9-6, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-9-7, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-9-8, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-9-9, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-9-10, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-9-11, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-9-12, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-9-13, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-9-14, lastUpdatedBy: local-user
+LocalGanttRepository: Read task assignment-job-9-15, lastUpdatedBy: local-user
+Restoring 162 missing contained dependencies for summary visuals...
+OfflineClient: Dropping transient operation CURSOR_MOVE because offline
+OfflineClient: Dropping transient operation CURSOR_MOVE because offline
+OfflineClient: Dropping transient operation CURSOR_MOVE because offline
+OfflineClient: Dropping transient operation CURSOR_MOVE because offline
+OfflineClient: Dropping transient operation CURSOR_MOVE because offline
+OfflineClient: Dropping transient operation CURSOR_MOVE because offline
+OfflineClient: Dropping transient operation CURSOR_MOVE because offline
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+** (com.example.example:3500311): WARNING **: 14:37:19.391: Unable to retrieve framework response: Message is not valid JSON
+OfflineClient: Dropping transient operation CURSOR_MOVE because offline
+OfflineClient: Dropping transient operation CURSOR_MOVE because offline
+OfflineClient: Dropping transient operation CURSOR_MOVE because offline
+OfflineClient: Dropping transient operation CURSOR_MOVE because offline
+OfflineClient: Dropping transient operation CURSOR_MOVE because offline
+OfflineClient: Dropping transient operation CURSOR_MOVE because offline
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+** (com.example.example:3500311): WARNING **: 14:38:17.259: Unable to retrieve framework response: Message is not valid JSON
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+** (com.example.example:3500311): WARNING **: 14:38:17.407: Unable to retrieve framework response: Message is not valid JSON
+
+** (com.example.example:3500311): WARNING **: 14:38:17.414: Unable to retrieve framework response: Message is not valid JSON
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+** (com.example.example:3500311): WARNING **: 14:38:17.417: Unable to retrieve framework response: Message is not valid JSON
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+** (com.example.example:3500311): WARNING **: 14:38:18.159: Unable to retrieve framework response: Message is not valid JSON
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+** (com.example.example:3500311): WARNING **: 14:38:18.163: Unable to retrieve framework response: Message is not valid JSON
+
+** (com.example.example:3500311): WARNING **: 14:38:18.164: Unable to retrieve framework response: Message is not valid JSON
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+** (com.example.example:3500311): WARNING **: 14:38:18.289: Unable to retrieve framework response: Message is not valid JSON
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+** (com.example.example:3500311): WARNING **: 14:38:19.516: Unable to retrieve framework response: Message is not valid JSON
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+** (com.example.example:3500311): WARNING **: 14:38:19.587: Unable to retrieve framework response: Message is not valid JSON
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+** (com.example.example:3500311): WARNING **: 14:38:19.604: Unable to retrieve framework response: Message is not valid JSON
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+** (com.example.example:3500311): WARNING **: 14:38:19.669: Unable to retrieve framework response: Message is not valid JSON
+
+** (com.example.example:3500311): WARNING **: 14:38:19.669: Unable to retrieve framework response: Message is not valid JSON
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+** (com.example.example:3500311): WARNING **: 14:38:19.753: Unable to retrieve framework response: Message is not valid JSON
+
+** (com.example.example:3500311): WARNING **: 14:38:19.753: Unable to retrieve framework response: Message is not valid JSON
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+** (com.example.example:3500311): WARNING **: 14:38:19.844: Unable to retrieve framework response: Message is not valid JSON
+
+** (com.example.example:3500311): WARNING **: 14:38:19.844: Unable to retrieve framework response: Message is not valid JSON
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+** (com.example.example:3500311): WARNING **: 14:38:19.919: Unable to retrieve framework response: Message is not valid JSON
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+** (com.example.example:3500311): WARNING **: 14:38:20.060: Unable to retrieve framework response: Message is not valid JSON
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+** (com.example.example:3500311): WARNING **: 14:38:20.196: Unable to retrieve framework response: Message is not valid JSON
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+** (com.example.example:3500311): WARNING **: 14:38:20.202: Unable to retrieve framework response: Message is not valid JSON
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+** (com.example.example:3500311): WARNING **: 14:38:20.206: Unable to retrieve framework response: Message is not valid JSON
+
+** (com.example.example:3500311): WARNING **: 14:38:20.298: Unable to retrieve framework response: Message is not valid JSON
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+** (com.example.example:3500311): WARNING **: 14:38:20.306: Unable to retrieve framework response: Message is not valid JSON
+
+** (com.example.example:3500311): WARNING **: 14:38:20.307: Unable to retrieve framework response: Message is not valid JSON
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+** (com.example.example:3500311): WARNING **: 14:38:20.456: Unable to retrieve framework response: Message is not valid JSON
+Connecting with lastSyncedHlc: 2026-05-02T22:01:25.169Z-0000-patrick
+Broadcasting Presence: User 1000901978
+OfflineClient: Dropping transient operation PRESENCE_UPDATE because offline
+Time Sync: Local=1779043102513, Server=1779043102502, Skew=-11
+Skipping message without timestamp/actorId: AUTH_SUCCESS
+Subscription confirmed: legacy
+OfflineClient: Connection state changed to true
+OfflineClient: Connected, triggering flush...
+OfflineClient: Starting flush perform...
+Sync Metadata received: total=8932
+SyncClient: Received RESET_DATA, clearing buffer and applying immediately
+WARNING: RESET_DATA received. Destructive wipe (Emergency Admin Action)...
+OfflineClient: Queue is empty, breaking flush.
+OfflineClient: Flush perform finished.
+Initial sync starting: expecting 8932 operations
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.596Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.572Z-0000-server-sync
+LocalGanttRepository: Read task assignment-job-0-1, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-0-5, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-0-6, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-0-8, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-0-9, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-0-10, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-0-11, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-0-12, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-0-13, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-0-14, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-0-15, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-0, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-1, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-2, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-5, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-6, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-7, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-8, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-9, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-10, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-11, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-12, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-13, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-14, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-15, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-0, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-3, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-4, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-5, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-9, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-10, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-11, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-12, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-13, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-14, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-15, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-0, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-1, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-2, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-3, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-5, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-6, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-7, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-9, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-10, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-11, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-12, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-13, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-14, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-15, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-0, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-1, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-2, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-3, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-4, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-7, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-8, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-9, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-10, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-11, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-12, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-13, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-14, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-15, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-0, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-1, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-3, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-4, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-5, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-6, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-8, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-9, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-10, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-11, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-12, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-13, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-14, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-15, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-0, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-1, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-2, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-3, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-4, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-5, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-6, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-7, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-9, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-10, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-11, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-12, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-13, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-14, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-15, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-7-0, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-7-1, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-7-2, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-7-3, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-7-4, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-7-5, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-7-8, lastUpdatedBy: server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.573Z-0000-server-sync
+LocalGanttRepository: Read task assignment-job-0-0, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task summary-task-person-0, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-0-1, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-0-2, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-extra, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-0-3, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-0-4, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-0-5, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-0-6, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-0-7, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-0-8, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-0-9, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task milestone_demo_1, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-0-10, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-0-11, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-0-12, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-0-13, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-0-14, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-0-15, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-0, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task summary-task-person-1, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-1, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-2, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-3, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-4, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-5, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-6, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-7, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-8, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-9, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-10, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-11, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-12, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-13, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-14, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-1-15, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-0, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task summary-task-person-2, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-1, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-2, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-3, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-4, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-5, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-6, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-7, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-8, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-9, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-10, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-11, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-12, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-13, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-14, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-2-15, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-0, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task summary-task-person-3, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-1, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-2, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-3, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-4, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-5, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-6, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-7, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-8, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-9, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-10, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-11, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-12, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-13, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-14, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-3-15, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-0, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task summary-task-person-4, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-1, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-2, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-3, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-4, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-5, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-6, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-7, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-8, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-9, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-10, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-11, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-12, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-13, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-14, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-4-15, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-0, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task summary-task-person-5, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-1, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-2, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-3, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-4, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-5, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-6, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-7, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-8, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-9, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-10, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-11, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-12, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-13, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-14, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-5-15, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-0, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task summary-task-person-6, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-1, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-2, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-3, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-4, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-5, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-6, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-7, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-8, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-9, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-10, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-11, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-12, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-13, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-14, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-6-15, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-7-0, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task summary-task-person-7, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-7-1, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-7-2, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-7-3, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-7-4, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-7-5, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-7-6, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-7-7, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-7-8, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-7-9, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-7-10, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-7-11, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-7-12, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-7-13, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-7-14, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-7-15, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-8-0, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task summary-task-person-8, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-8-1, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-8-2, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-8-3, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-8-4, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-8-5, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-8-6, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-8-7, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-8-8, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-8-9, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-8-10, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-8-11, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-8-12, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-8-13, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-8-14, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-8-15, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-9-0, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task summary-task-person-9, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-9-1, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-9-2, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-9-3, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-9-4, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-9-5, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-9-6, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-9-7, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-9-8, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-9-9, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-9-10, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-9-11, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-9-12, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-9-13, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-9-14, lastUpdatedBy: server-sync
+LocalGanttRepository: Read task assignment-job-9-15, lastUpdatedBy: server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.573Z-0000-server-sync
+Broadcasting Presence: User 1000901978
+Broadcasting Presence: User 1000901978
+Broadcasting Presence: User 1000901978
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.574Z-0000-server-sync
+Broadcasting Presence: User 1000901978
+Broadcasting Presence: User 1000901978
+Broadcasting Presence: User 1000901978
+Broadcasting Presence: User 1000901978
+Broadcasting Presence: User 1000901978
+Broadcasting Presence: User 1000901978
+Broadcasting Presence: User 1000901978
+Broadcasting Presence: User 1000901978
+Broadcasting Presence: User 1000901978
+Broadcasting Presence: User 1000901978
+Broadcasting Presence: User 1000901978
+Broadcasting Presence: User 1000901978
+Broadcasting Presence: User 1000901978
+Broadcasting Presence: User 1000901978
+Broadcasting Presence: User 1000901978
+Broadcasting Presence: User 1000901978
+
+════════ Exception caught by services library ══════════════════════════════════
+A KeyUpEvent is dispatched, but the state shows that the physical key is not pressed. If this occurs in real application, please report this bug to Flutter. If this occurs in unit tests, please ensure that simulated events follow Flutter's event model as documented in `HardwareKeyboard`. This was the event: KeyUpEvent#4896e(physicalKey: PhysicalKeyboardKey#52951(usbHidUsage: "0x00070050", debugName: "Arrow Left"), logicalKey: LogicalKeyboardKey#860f3(keyId: "0x100000302", keyLabel: "Arrow Left", debugName: "Arrow Left"), character: null, timeStamp: 85:38:34.031000)
+'package:flutter/src/services/hardware_keyboard.dart':
+Failed assertion: line 522 pos 11: '_pressedKeys.containsKey(event.physicalKey)'
+════════════════════════════════════════════════════════════════════════════════
+
+** (com.example.example:3500311): WARNING **: 14:40:42.133: Unable to retrieve framework response: Message is not valid JSON
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.573Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.573Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.574Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.575Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.575Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.575Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.576Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.574Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.575Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.576Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.576Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.576Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.576Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.576Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.577Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.577Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.577Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.577Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.578Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.578Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.577Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.578Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.578Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.579Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.578Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.579Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.579Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.580Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.580Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.580Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.580Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.579Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.581Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.586Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.581Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.587Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.588Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.587Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.580Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.587Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.588Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.586Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.589Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.588Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.589Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.587Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.588Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.589Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.589Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.589Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.590Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.590Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.591Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.588Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.590Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.591Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.592Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.590Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.592Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.592Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.592Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.593Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.592Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.591Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.593Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.593Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.591Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.594Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.594Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.593Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.591Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.594Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.595Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.594Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.594Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.595Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.595Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.595Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.596Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.595Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.596Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.596Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.575Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.574Z-0000-server-sync
+SyncClient: Received operation BATCH_UPDATE with timestamp 2026-05-17T18:38:22.574Z-0000-server-sync
+Restoring 1 missing contained dependencies for summary visuals...
+Initial sync complete: processed 8932/8932 operations
+Broadcasting Presence: User 1000901978
+Broadcasting Presence: User 1000901978
+Broadcasting Presence: User 1000901978
+Broadcasting Presence: User 1000901978
+Broadcasting Presence: User 1000901978
+Broadcasting Presence: User 1000901978
+Broadcasting Presence: User 1000901978
+Broadcasting Presence: User 1000901978

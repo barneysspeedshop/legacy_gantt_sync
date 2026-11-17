@@ -1,0 +1,70 @@
+# this file is for performing manual local testing only
+# it is not used by the application. See docker-swarm.yml for production
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: dart_user
+      POSTGRES_PASSWORD: ${DB_PASS:?Set DB_PASS}
+      POSTGRES_DB: legacy_gantt
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dart_user -d legacy_gantt"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  redis:
+    image: redis:7
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build: .
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      # Networking
+      DB_HOST: db
+      REDIS_HOST: redis
+      # DB Config
+      DB_NAME: legacy_gantt
+      DB_USER: dart_user
+      DB_PASS: ${DB_PASS:?Set DB_PASS}
+      DB_PORT: 5432
+      DB_SSL_MODE: disable
+      # App Config
+      LEGACY_GANTT_SYNC_PORT: 8080
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
+      SUPERUSER_USERNAME: ${SUPERUSER_USERNAME}
+      SUPERUSER_PASSWORD: ${SUPERUSER_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      - server
+
+volumes:
+  pgdata:
+  redis_data:

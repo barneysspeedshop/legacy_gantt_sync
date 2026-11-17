@@ -1,0 +1,359 @@
+openapi: 3.0.3
+info:
+  title: Legacy Gantt Local Database Inspector
+  version: 1.0.0
+  description: >-
+    Loopback-only, read-only diagnostics API for the Legacy Gantt Sync
+    application tables. It is not mounted by the production server.
+servers:
+  - url: http://127.0.0.1:8787/api/local/v1
+security:
+  - bearerAuth: []
+    localInspectorToken: []
+paths:
+  /health:
+    get:
+      security: []
+      responses:
+        '200':
+          description: Inspector is running
+  /tables:
+    get:
+      summary: List application tables
+      responses:
+        '200':
+          description: Allowlisted application table registry
+  /schema:
+    get:
+      summary: Describe the live application schema
+      responses:
+        '200':
+          description: Columns, primary keys, and RLS metadata
+  /schema/{schema}/{table}:
+    get:
+      summary: Describe one application table
+      parameters:
+        - $ref: '#/components/parameters/Schema'
+        - $ref: '#/components/parameters/Table'
+      responses:
+        '200':
+          description: Table metadata
+        '404':
+          description: Unknown application table
+  /tables/{schema}/{table}:
+    get:
+      summary: Read rows from an allowlisted application table
+      parameters:
+        - $ref: '#/components/parameters/Schema'
+        - $ref: '#/components/parameters/Table'
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/IncludeDeleted'
+        - $ref: '#/components/parameters/Pagination'
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Sanitized paginated rows
+        '400':
+          description: Unknown table, missing tenant, or invalid filter
+  /database/summary:
+    get:
+      summary: Summarize every application table
+      responses:
+        '200':
+          description: Row and tombstone counts
+  /database/export:
+    get:
+      summary: Export sanitized application rows as JSONL
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/IncludeDeleted'
+        - name: tables
+          in: query
+          schema:
+            type: string
+          description: Comma-separated allowlisted table keys
+      responses:
+        '200':
+          description: Sanitized newline-delimited JSON export
+  /auth/tenants:
+    get:
+      summary: List auth tenants
+      responses:
+        '200':
+          description: Tenant rows
+  /auth/tenants/{tenantId}:
+    get:
+      summary: Read one auth tenant
+      parameters:
+        - $ref: '#/components/parameters/TenantIdPath'
+      responses:
+        '200':
+          description: Tenant row
+  /auth/users:
+    get:
+      summary: List auth users
+      description: password_hash is always redacted.
+      parameters:
+        - name: tenantId
+          in: query
+          schema:
+            type: string
+        - name: role
+          in: query
+          schema:
+            type: string
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Sanitized user rows
+  /auth/users/{userId}:
+    get:
+      summary: Read one auth user
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: Sanitized user row
+  /auth/refresh-tokens:
+    get:
+      summary: List refresh-token metadata
+      description: token_hash is always redacted.
+      responses:
+        '200':
+          description: Sanitized refresh-token rows
+  /auth/refresh-tokens/{tokenId}:
+    get:
+      summary: Read one refresh-token metadata row
+      parameters:
+        - $ref: '#/components/parameters/TokenId'
+      responses:
+        '200':
+          description: Sanitized refresh-token row
+  /project/tasks:
+    get:
+      summary: List tenant task rows
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/IncludeDeleted'
+        - $ref: '#/components/parameters/Pagination'
+      responses:
+        '200':
+          description: Task rows with CRDT metadata
+        '400':
+          description: Missing tenantId or invalid filter
+  /project/tasks/{tenantId}/{taskId}:
+    get:
+      summary: Read one tenant task
+      parameters:
+        - $ref: '#/components/parameters/TenantIdPath'
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '200':
+          description: Task row
+  /project/dependencies:
+    get:
+      summary: List tenant dependency rows
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/IncludeDeleted'
+        - $ref: '#/components/parameters/Pagination'
+      responses:
+        '200':
+          description: Dependency rows with CRDT metadata
+  /project/dependencies/{tenantId}/{predecessorId}/{successorId}:
+    get:
+      summary: Read one tenant dependency
+      parameters:
+        - $ref: '#/components/parameters/TenantIdPath'
+        - $ref: '#/components/parameters/PredecessorId'
+        - $ref: '#/components/parameters/SuccessorId'
+      responses:
+        '200':
+          description: Dependency row
+  /project/resources:
+    get:
+      summary: List tenant resource rows
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/IncludeDeleted'
+        - $ref: '#/components/parameters/Pagination'
+      responses:
+        '200':
+          description: Resource rows with CRDT metadata
+  /project/resources/{tenantId}/{resourceId}:
+    get:
+      summary: Read one tenant resource
+      parameters:
+        - $ref: '#/components/parameters/TenantIdPath'
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Resource row
+  /project/metadata/{tenantId}:
+    get:
+      summary: Read tenant project metadata
+      parameters:
+        - $ref: '#/components/parameters/TenantIdPath'
+      responses:
+        '200':
+          description: Project reset and sync metadata
+  /licenses:
+    get:
+      summary: List license rows
+      description: license_key is always redacted.
+      parameters:
+        - name: tenantId
+          in: query
+          schema:
+            type: string
+        - name: isRevoked
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Sanitized license rows
+  /licenses/{tenantId}:
+    get:
+      summary: List licenses for one tenant
+      parameters:
+        - $ref: '#/components/parameters/TenantIdPath'
+      responses:
+        '200':
+          description: Sanitized license rows
+  /tenants/{tenantId}/snapshot:
+    get:
+      summary: Read a tenant project snapshot
+      parameters:
+        - $ref: '#/components/parameters/TenantIdPath'
+        - $ref: '#/components/parameters/IncludeDeleted'
+      responses:
+        '200':
+          description: Tasks, dependencies, resources, metadata, and counts
+  /sync/merkle/{tenantId}/root:
+    get:
+      summary: Read a tenant Merkle root
+      parameters:
+        - $ref: '#/components/parameters/TenantIdPath'
+      responses:
+        '200':
+          description: Merkle root hash
+  /sync/merkle/{tenantId}/nodes:
+    get:
+      summary: Read Merkle node children
+      parameters:
+        - $ref: '#/components/parameters/TenantIdPath'
+        - $ref: '#/components/parameters/MerklePrefix'
+      responses:
+        '200':
+          description: Child node hashes
+  /sync/merkle/{tenantId}/entities:
+    get:
+      summary: Read entities in a Merkle prefix
+      parameters:
+        - $ref: '#/components/parameters/TenantIdPath'
+        - $ref: '#/components/parameters/MerklePrefix'
+      responses:
+        '200':
+          description: Canonical sync operations in the prefix
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+    localInspectorToken:
+      type: apiKey
+      in: header
+      name: X-Local-Inspector-Token
+  parameters:
+    Schema:
+      name: schema
+      in: path
+      required: true
+      schema:
+        type: string
+    Table:
+      name: table
+      in: path
+      required: true
+      schema:
+        type: string
+    TenantId:
+      name: tenantId
+      in: query
+      required: true
+      schema:
+        type: string
+    TenantIdPath:
+      name: tenantId
+      in: path
+      required: true
+      schema:
+        type: string
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+    TokenId:
+      name: tokenId
+      in: path
+      required: true
+      schema:
+        type: string
+    TaskId:
+      name: taskId
+      in: path
+      required: true
+      schema:
+        type: string
+    PredecessorId:
+      name: predecessorId
+      in: path
+      required: true
+      schema:
+        type: string
+    SuccessorId:
+      name: successorId
+      in: path
+      required: true
+      schema:
+        type: string
+    ResourceId:
+      name: resourceId
+      in: path
+      required: true
+      schema:
+        type: string
+    MerklePrefix:
+      name: prefix
+      in: query
+      required: true
+      schema:
+        type: string
+    IncludeDeleted:
+      name: includeDeleted
+      in: query
+      schema:
+        type: boolean
+        default: true
+    Pagination:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 1000
+        default: 100

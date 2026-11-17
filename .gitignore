@@ -1,0 +1,37 @@
+# https://dart.dev/guides/libraries/private-files
+# Created by `dart pub`
+.dart_tool/
+config/android
+config/linux
+.idea
+build
+nginx/certs/selfsigned.crt
+nginx/certs/selfsigned.key
+google_cloud_function
+# Secrets
+keys/
+secrets/
+.env*
+.gemini/
+.rope_notes/
+console.md
+
+# Operator credentials (including nested examples and tooling).
+**/keys/
+**/secrets/
+**/.env*
+*.key
+*.p12
+*.pfx
+# Local assistant session state.
+.kiro/
+.rope_notes/
+.yoyo/
+
+# Python tooling caches.
+__pycache__/
+
+# Independently maintained marketing checkout and generated Flutter metadata.
+/site/
+/config/.flutter-plugins-dependencies
+.yoyo.toml

@@ -1,0 +1,65 @@
+name: Ecosystem release check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: dart_user
+          POSTGRES_PASSWORD: release-test-only
+          POSTGRES_DB: legacy_gantt
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U dart_user -d legacy_gantt"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+    env:
+      TEST_DB_PORT: '5432'
+      TEST_DB_PASS: release-test-only
+      TEST_REDIS_PORT: '6379'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+          token: ${{ secrets.SUBMODULE_READ_TOKEN || github.token }}
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.2'
+          cache: true
+      - uses: dtolnay/rust-toolchain@1.93.0
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install check tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler libsqlite3-dev
+          go install github.com/zricethezav/gitleaks/v8@v8.30.1
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+      - name: Build and verify the ecosystem
+        run: bash scripts/check_release.sh

@@ -1,0 +1,16 @@
+include: package:lints/recommended.yaml
+
+analyzer:
+  plugins:
+    - custom_lint
+
+linter:
+  rules:
+    - prefer_const_constructors
+    - prefer_final_fields
+    - prefer_final_locals
+    - prefer_final_in_for_each
+    - avoid_setters_without_getters
+    - parameter_assignments
+    - unnecessary_this
+    - prefer_single_quotes
