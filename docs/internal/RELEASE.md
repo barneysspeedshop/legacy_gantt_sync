@@ -38,10 +38,7 @@ bash scripts/check_release.sh
 
 PostgreSQL must have user `dart_user` and database `legacy_gantt`. These integration tests create tenants and users; use isolated test services. The script scans current publishable files, tests the Rust FFI contract, protocol, admin app, widgets, and examples, runs the complete server suite serially, and builds the server, admin web app, and demo. Rust compilation finishes before Dart/Flutter builds. Historical scanning is a separate, redacted audit (`scripts/audit_open_source.py --history`) to verify published refs after the rewrite. The private recovery backup still contains the retired key and must not be published.
 
-While the plugin repository remains private, Actions needs a
-`SUBMODULE_READ_TOKEN` repository secret with read access to that repository
-for recursive checkout. Once all submodules are public, the default Actions
-token is sufficient. Repository visibility is a separate release action.
+All six submodules are public, so recursive checkout uses the default read-only Actions token. The marketing site remains independent. Repository visibility is a separate release action.
 
 The gate also checks Rust formatting and Clippy, the Go mock server's build/vet/formatting, package example analysis, plugin host lint and behavior tests, plugin webview startup and build. The Go mock has no automated tests. Tree grid and timeline examples have no test suites; their package tests and example analysis provide coverage.
 

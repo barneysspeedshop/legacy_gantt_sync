@@ -38,21 +38,20 @@ jobs:
       TEST_DB_PASS: release-test-only
       TEST_REDIS_PORT: '6379'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           submodules: recursive
           persist-credentials: false
-          token: ${{ secrets.SUBMODULE_READ_TOKEN || github.token }}
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           channel: stable
           flutter-version: '3.47.2'
           cache: true
-      - uses: dtolnay/rust-toolchain@1.93.0
-      - uses: actions/setup-go@v5
+      - uses: dtolnay/rust-toolchain@2b28c52cef68d77e9a4de0b428559db37728c04f # 1.93.0
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version: stable
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
       - name: Install check tools
