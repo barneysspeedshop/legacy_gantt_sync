@@ -17,3 +17,6 @@
 [submodule "legacy_gantt_plugin"]
 	path = legacy_gantt_plugin
 	url = https://github.com/barneysspeedshop/legacy_gantt_plugin.git
+[submodule "legacy_context_menu"]
+	path = legacy_context_menu
+	url = https://github.com/barneysspeedshop/legacy_context_menu.git
