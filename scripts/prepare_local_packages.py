@@ -12,6 +12,10 @@ packages = {
         'legacy_gantt_protocol': '../../legacy_gantt_protocol',
         'legacy_timeline_scrubber': '../../legacy_timeline_scrubber',
         'legacy_tree_grid': '../../legacy_tree_grid',
+        'legacy_context_menu': '../../legacy_context_menu',
+    },
+    'legacy_tree_grid/example': {
+        'legacy_context_menu': '../../legacy_context_menu',
     },
     'legacy_pert_chart': {
         'legacy_gantt_protocol': '../legacy_gantt_protocol',
@@ -38,8 +42,9 @@ for directory, dependencies in packages.items():
                 f'  {name}:\n    path: {relative}\n'
                 for name, relative in dependencies.items() if name not in omitted)
             for omitted in (
-                {'legacy_tree_grid'},
-                {'legacy_tree_grid', 'legacy_timeline_scrubber'},
+                {'legacy_context_menu'},
+                {'legacy_tree_grid', 'legacy_context_menu'},
+                {'legacy_tree_grid', 'legacy_timeline_scrubber', 'legacy_context_menu'},
             )
         ]
         if directory == 'legacy_gantt_plugin/webview_ui' or path.read_text() not in previous:

@@ -26,5 +26,7 @@ dependency_overrides:
     path: ../../legacy_timeline_scrubber
   legacy_tree_grid:
     path: ../../legacy_tree_grid
+  legacy_context_menu:
+    path: ../../legacy_context_menu
 flutter:
   uses-material-design: true

@@ -7,6 +7,7 @@ This is a separate breaking release after the initial MIT/open-source release. T
 | Package | Candidate | Requirement |
 | --- | --- | --- |
 | `legacy_gantt_protocol` | 3.0.1 (unchanged) | Existing pure-Dart protocol; no republish needed |
+| `legacy_context_menu` | 3.0.0 | Dart 3.13 / Flutter 3.47 or newer; standalone Material UI |
 | `legacy_tree_grid` | 0.15.0 | Dart 3.13 / Flutter 3.47 or newer; standalone Material UI |
 | `legacy_timeline_scrubber` | 4.0.0 | Same Flutter baseline; standalone Material UI |
 | `legacy_gantt_chart` | 10.0.0 | Same Flutter baseline; protocol ^3.0.1 and timeline ^4.0.0 |
@@ -16,11 +17,11 @@ The server and Config App retain their own application versions. The plugin rema
 
 ### Application migration
 
-Add `material_ui` to applications that use Material design and replace `package:flutter/material.dart` imports with `package:material_ui/material_ui.dart`. SDK Material types and standalone Material types are distinct, so migrate callers and their theme arguments together. Use the standalone package's `GlobalMaterialLocalizations.delegates`. When an external dependency still reads SDK Material themes or localizations from context, wrap the application's child in `MaterialUiCompatibilityBridge` inside `MaterialApp.builder`. The bridge does not convert public API types. Flutter marks this helper as temporary and deprecated; examples that still use the external `legacy_context_menu` dependency isolate it at the app boundary with a targeted annotation. Fully migrated applications do not need the bridge.
+Add `material_ui` to applications that use Material design and replace `package:flutter/material.dart` imports with `package:material_ui/material_ui.dart`. SDK Material types and standalone Material types are distinct, so migrate callers and their theme arguments together. Use the standalone package's `GlobalMaterialLocalizations.delegates`. The context menu is migrated in the same release, so the examples use the standalone types directly without a compatibility bridge.
 
 Keep existing installations on chart 9.x if they need the previous Flutter baseline. This migration is not a 9.0.x patch. The pure-Dart protocol, CRDT clocks, and server wire format remain unchanged.
 
-Publish **tree grid 0.15.0 and timeline 4.0.0 first**, then verify and publish **chart 10.0.0**, then verify and publish **PERT 0.3.0**. Chart's example resolves tree grid as well as the chart's timeline dependency. Recheck standalone CI against hosted dependencies after each prerequisite is available; monorepo path overrides are only for candidate validation. Package publication is an explicit maintainer action.
+Publish **context menu 3.0.0, tree grid 0.15.0, and timeline 4.0.0 first**, then verify and publish **chart 10.0.0**, then verify and publish **PERT 0.3.0**. Chart and tree examples also resolve context menu; publish it before rerunning their standalone CI. Recheck standalone CI against hosted dependencies after each prerequisite is available; monorepo path overrides are only for candidate validation. Package publication is an explicit maintainer action.
 
 ## Migration
 
@@ -49,11 +50,11 @@ bash scripts/check_release.sh
 
 PostgreSQL must have user `dart_user` and database `legacy_gantt`. These integration tests create tenants and users; use isolated test services. The script scans current publishable files, tests the Rust FFI contract, protocol, admin app, widgets, and examples, runs the complete server suite serially, and builds the server, admin web app, and demo. Rust compilation finishes before Dart/Flutter builds. Historical scanning is a separate, redacted audit (`scripts/audit_open_source.py --history`) to verify published refs after the rewrite. The private recovery backup still contains the retired key and must not be published.
 
-All six submodules are public, so recursive checkout uses the default read-only Actions token. The marketing site remains independent. Repository visibility is a separate release action.
+All seven submodules are public, so recursive checkout uses the default read-only Actions token. The marketing site remains independent. Repository visibility is a separate release action.
 
 The gate also checks Rust formatting and Clippy, the Go mock server's build/vet/formatting, package example analysis, plugin host lint and behavior tests, plugin webview startup and build. The Go mock has no automated tests. Tree grid and timeline examples have no test suites; their package tests and example analysis provide coverage.
 
-Before the candidate versions reach pub.dev, run `python3 scripts/prepare_local_packages.py`. It writes ignored local overrides for the monorepo examples and dependent packages and refuses to overwrite conflicting user configuration. It runs automatically in the release gate. Independently cloned package repositories resolve published dependencies, so publish the new tree grid and timeline scrubber → chart → PERT versions in order before relying on their standalone CI workflows. The protocol package is unchanged.
+Before the candidate versions reach pub.dev, run `python3 scripts/prepare_local_packages.py`. It writes ignored local overrides for the monorepo examples and dependent packages and refuses to overwrite conflicting user configuration. It runs automatically in the release gate. Independently cloned package repositories resolve published dependencies, so publish the new context menu, tree grid, and timeline scrubber → chart → PERT versions in order before relying on their standalone CI workflows. The protocol package is unchanged.
 
 ## Fresh-checkout rehearsal
 

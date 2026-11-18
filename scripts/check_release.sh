@@ -25,10 +25,10 @@ mkdir -p build
 dart compile exe bin/server.dart -o build/release-server
 dart test --concurrency=1
 
-for package in config legacy_gantt_chart legacy_pert_chart legacy_tree_grid legacy_timeline_scrubber; do
+for package in config legacy_context_menu legacy_gantt_chart legacy_pert_chart legacy_tree_grid legacy_timeline_scrubber; do
   (cd "$package" && flutter pub get && flutter analyze && flutter test)
 done
-for example in legacy_gantt_chart/example legacy_pert_chart/example legacy_tree_grid/example legacy_timeline_scrubber/example; do
+for example in legacy_context_menu/example legacy_gantt_chart/example legacy_pert_chart/example legacy_tree_grid/example legacy_timeline_scrubber/example; do
   (cd "$example" && flutter pub get && flutter analyze)
   if [[ -d "$example/test" ]]; then
     (cd "$example" && flutter test)
