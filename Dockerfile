@@ -1,5 +1,5 @@
 # Stage 1: Build Rust Solver
-FROM rust:1.93.0@sha256:bbde3ca426faeebab3eb58b8005d3d6da70607817a14bb92a55c94611d4d905f AS rust-builder
+FROM rust:1.99.1@sha256:8a4e90c7946b74626488b1446f712c0fe0ed1a596cbd3d871684bc9c5433ae07 AS rust-builder
 WORKDIR /app
 COPY gantt_solver_rs ./gantt_solver_rs
 COPY legacy_gantt_protocol ./legacy_gantt_protocol
