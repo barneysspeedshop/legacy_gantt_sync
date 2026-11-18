@@ -1,14 +1,14 @@
 # Stage 1: Build Rust Solver
-FROM rust:latest AS rust-builder
+FROM rust:1.93.0@sha256:bbde3ca426faeebab3eb58b8005d3d6da70607817a14bb92a55c94611d4d905f AS rust-builder
 WORKDIR /app
 COPY gantt_solver_rs ./gantt_solver_rs
 COPY legacy_gantt_protocol ./legacy_gantt_protocol
 WORKDIR /app/gantt_solver_rs
 RUN apt-get update && apt-get install -y protobuf-compiler
-RUN cargo build --release
+RUN cargo build --release --locked --jobs 1
 
 # Stage 2: Build Dart Server (Forces Sequential Execution)
-FROM dart:stable AS dart-builder
+FROM dart:3.14.0@sha256:c78970229c8944bd6076caf4e5977ef569ba66750d301a2149f63b41a6725cec AS dart-builder
 
 # We copy a file from the previous stage here. This forces Docker to 
 # wait for the Rust build to finish completely before starting the Dart build,
@@ -18,12 +18,12 @@ COPY --from=rust-builder /app/gantt_solver_rs/target/release/libgantt_solver_rs.
 WORKDIR /app
 COPY pubspec.* ./
 COPY legacy_gantt_protocol ./legacy_gantt_protocol
-RUN dart pub get
+RUN dart pub get --enforce-lockfile
 COPY . .
 RUN dart compile exe bin/server.dart -o bin/server
 
 # Stage 3: Final Image
-FROM debian:stable-slim
+FROM debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2
 
 # Install CA certificates for HTTPS support
 RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*

@@ -35,7 +35,7 @@ for example in legacy_context_menu/example legacy_gantt_chart/example legacy_per
   fi
 done
 (cd integration_tests/canonical_sync && flutter pub get && flutter analyze && flutter test)
-(cd legacy_gantt_plugin && npm ci && npm test)
+(cd legacy_gantt_plugin && npm ci --ignore-scripts && npm test && npm audit signatures && python3 scripts/test_audit_dependencies.py && python3 scripts/audit_dependencies.py)
 (cd legacy_gantt_plugin/webview_ui && flutter pub get && flutter analyze && flutter test && flutter build web --release --no-pub)
 (cd config && flutter build web --release --no-pub)
 bash scripts/build_demo.sh
