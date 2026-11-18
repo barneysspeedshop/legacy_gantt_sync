@@ -7,6 +7,9 @@ The **Legacy Gantt Sync** repository contains the ecosystem for the `legacy_gant
 This monorepo is organized into the following key components:
 
 ### Flutter Packages
+
+The next breaking UI release uses standalone `material_ui`, Dart 3.13+, and Flutter 3.47+. See the [release and migration guide](docs/internal/RELEASE.md) for candidate versions and publication order. The pure-Dart protocol and server transport are unchanged.
+
 - **[`legacy_gantt_chart`](legacy_gantt_chart/)**: The core Flutter widget for displaying interactive Gantt charts. Supports drag-and-drop, resizing, dynamic data loading, and CRDT-based synchronization.
 - **[`legacy_tree_grid`](legacy_tree_grid/)**: A powerful, high-performance tree grid widget used by the Gantt chart to display the task list.
 - **[`legacy_timeline_scrubber`](legacy_timeline_scrubber/)**: A dedicated timeline navigation widget that provides a high-level overview and helps users navigate large datasets.

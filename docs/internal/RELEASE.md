@@ -1,19 +1,30 @@
 # Coordinated open-source release
 
-## Candidate versions and requirements
+## Material UI migration candidates
+
+This is a separate breaking release after the initial MIT/open-source release. The new UI versions are candidates; protocol 3.0.1 stays unchanged.
 
 | Package | Candidate | Requirement |
 | --- | --- | --- |
-| `legacy_gantt_protocol` | 3.0.1 | Dart 3.8 or newer |
-| `legacy_timeline_scrubber` | 3.0.0 | Dart 3.10 / Flutter 3.38; nullable date fields and line-count mode |
-| `legacy_gantt_chart` | 9.0.0 | Dart 3.10 / Flutter 3.38 or newer; protocol ^3.0.1 |
-| `legacy_pert_chart` | 0.2.0 | Same Flutter baseline; chart ^9.0.0 and protocol ^3.0.1 |
+| `legacy_gantt_protocol` | 3.0.1 (unchanged) | Existing pure-Dart protocol; no republish needed |
+| `legacy_tree_grid` | 0.15.0 | Dart 3.13 / Flutter 3.47 or newer; standalone Material UI |
+| `legacy_timeline_scrubber` | 4.0.0 | Same Flutter baseline; standalone Material UI |
+| `legacy_gantt_chart` | 10.0.0 | Same Flutter baseline; protocol ^3.0.1 and timeline ^4.0.0 |
+| `legacy_pert_chart` | 0.3.0 | Same Flutter baseline; chart ^10.0.0 and protocol ^3.0.1 |
 
-The server and Config App retain their own application versions and use the checked-out protocol package. The plugin remains a prototype; its JSON sync client is not compatible with the production binary transport.
+The server and Config App retain their own application versions. The plugin remains a prototype; its JSON sync client is not compatible with the production binary transport.
+
+### Application migration
+
+Add `material_ui` to applications that use Material design and replace `package:flutter/material.dart` imports with `package:material_ui/material_ui.dart`. SDK Material types and standalone Material types are distinct, so migrate callers and their theme arguments together. Use the standalone package's `GlobalMaterialLocalizations.delegates`. When an external dependency still reads SDK Material themes or localizations from context, wrap the application's child in `MaterialUiCompatibilityBridge` inside `MaterialApp.builder`. The bridge does not convert public API types. Flutter marks this helper as temporary and deprecated; examples that still use the external `legacy_context_menu` dependency isolate it at the app boundary with a targeted annotation. Fully migrated applications do not need the bridge.
+
+Keep existing installations on chart 9.x if they need the previous Flutter baseline. This migration is not a 9.0.x patch. The pure-Dart protocol, CRDT clocks, and server wire format remain unchanged.
+
+Publish **tree grid 0.15.0 and timeline 4.0.0 first**, then verify and publish **chart 10.0.0**, then verify and publish **PERT 0.3.0**. Chart's example resolves tree grid as well as the chart's timeline dependency. Recheck standalone CI against hosted dependencies after each prerequisite is available; monorepo path overrides are only for candidate validation. Package publication is an explicit maintainer action.
 
 ## Migration
 
-Protocol 3.0.1 corrects equal-clock tombstone handling found during the final network tests after 3.0.0 was published. Publish 3.0.1 before chart 9.0.0 or PERT 0.2.0; their minimum protocol requirement excludes 3.0.0.
+The preceding open-source release used protocol 3.0.1, timeline 3.0.0, chart 9.0.0, and PERT 0.2.0. Protocol 3.0.1 corrected equal-clock tombstone handling found after 3.0.0 was published; the next release retains that minimum.
 
 Upgrade production clients and server together: there is no JSON-text fallback on the production WebSocket endpoint. Use `ProtocolMessage` binary frames and `ProtobufMapper` for logical operation maps. The Go mock server still uses JSON and is not a production compatibility target.
 
@@ -27,7 +38,7 @@ All first-party components use MIT. Keep authentication, tenant isolation, revoc
 
 ## Repeatable release gate (Linux)
 
-Install Flutter/Dart, Rust/Cargo, Go, Node.js/npm, `protoc`, and Gitleaks 8.30.1. The gate is verified with Flutter 3.47.2 / Dart 3.13.2 and Rust 1.93.0; CI pins those releases. Minimum-SDK matrix testing is not yet included. The root workflow `.github/workflows/release-check.yml` provisions disposable PostgreSQL 15 and Redis 7 services and runs:
+Install Flutter/Dart, Rust/Cargo, Go, Node.js/npm, `protoc`, and Gitleaks 8.30.1. CI targets Flutter 3.50.0 to match the SDK that reports the old Material imports as deprecated. Local migration checks use Flutter 3.47.2 / Dart 3.13.2 for the new baseline. Rust remains pinned to 1.93.0. Exact minimum-patch matrix testing is not included. The root workflow `.github/workflows/release-check.yml` provisions disposable PostgreSQL 15 and Redis 7 services and runs:
 
 ```bash
 TEST_DB_PORT=<disposable-postgres-port> \
@@ -42,7 +53,7 @@ All six submodules are public, so recursive checkout uses the default read-only 
 
 The gate also checks Rust formatting and Clippy, the Go mock server's build/vet/formatting, package example analysis, plugin host lint and behavior tests, plugin webview startup and build. The Go mock has no automated tests. Tree grid and timeline examples have no test suites; their package tests and example analysis provide coverage.
 
-Before the candidate versions reach pub.dev, run `python3 scripts/prepare_local_packages.py`. It writes ignored local overrides for the monorepo examples and dependent packages and refuses to overwrite conflicting user configuration. It runs automatically in the release gate. Independently cloned package repositories resolve published dependencies, so publish in protocol and timeline scrubber → chart → PERT order before relying on their standalone CI workflows.
+Before the candidate versions reach pub.dev, run `python3 scripts/prepare_local_packages.py`. It writes ignored local overrides for the monorepo examples and dependent packages and refuses to overwrite conflicting user configuration. It runs automatically in the release gate. Independently cloned package repositories resolve published dependencies, so publish the new tree grid and timeline scrubber → chart → PERT versions in order before relying on their standalone CI workflows. The protocol package is unchanged.
 
 ## Fresh-checkout rehearsal
 
