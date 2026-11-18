@@ -33,7 +33,7 @@ The script discovers initialized submodules from Git's index, scans tracked and 
 
 ## Repository contribution controls
 
-Changes to `main` require an up-to-date passing `verify` check from GitHub Actions, one approving review, code-owner review, and resolved review conversations. New commits dismiss stale approvals. Normal merges use squash commits; force pushes and branch deletion are blocked. `@barneysspeedshop` owns all paths. The sole maintainer retains the administrator override for recovery and maintainer-authored pull requests.
+Changes to `main` require up-to-date passing `security`, `verify`, and `image` checks from GitHub Actions, one approving review, code-owner review, and resolved review conversations. New commits dismiss stale approvals. Normal merges use squash commits; force pushes and branch deletion are blocked. `@barneysspeedshop` owns all paths. The sole maintainer retains the administrator override for recovery and maintainer-authored pull requests.
 
 Actions tokens default to read-only and cannot approve pull requests. Workflows use immutable action commits, selected action providers, and no cross-repository checkout secret. Dependabot proposes action updates through pull requests. Private-fork workflows are disabled and cannot receive secrets or write tokens. All outside-contributor workflows require approval. Never run unreviewed contributor code with deployment or publishing credentials.
 
