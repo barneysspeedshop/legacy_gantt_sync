@@ -50,7 +50,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@2b28c52cef68d77e9a4de0b428559db37728c04f # 1.93.0
         with:
           components: rustfmt, clippy
-      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: stable
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
