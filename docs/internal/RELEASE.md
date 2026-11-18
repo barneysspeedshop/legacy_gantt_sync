@@ -8,7 +8,7 @@ This is a separate breaking release after the initial MIT/open-source release. T
 | --- | --- | --- |
 | `legacy_gantt_protocol` | 3.0.1 (unchanged) | Existing pure-Dart protocol; no republish needed |
 | `legacy_context_menu` | 3.0.0 | Dart 3.13 / Flutter 3.47 or newer; standalone Material UI |
-| `legacy_tree_grid` | 0.15.0 | Dart 3.13 / Flutter 3.47 or newer; standalone Material UI |
+| `legacy_tree_grid` | 0.15.1 | Dart 3.13 / Flutter 3.47 or newer; standalone Material UI |
 | `legacy_timeline_scrubber` | 4.0.0 | Same Flutter baseline; standalone Material UI |
 | `legacy_gantt_chart` | 10.0.0 | Same Flutter baseline; protocol ^3.0.1 and timeline ^4.0.0 |
 | `legacy_pert_chart` | 0.3.0 | Same Flutter baseline; chart ^10.0.0 and protocol ^3.0.1 |
@@ -21,7 +21,7 @@ Add `material_ui` to applications that use Material design and replace `package:
 
 Keep existing installations on chart 9.x if they need the previous Flutter baseline. This migration is not a 9.0.x patch. The pure-Dart protocol, CRDT clocks, and server wire format remain unchanged.
 
-Publish **context menu 3.0.0, tree grid 0.15.0, and timeline 4.0.0 first**, then verify and publish **chart 10.0.0**, then verify and publish **PERT 0.3.0**. Chart and tree examples also resolve context menu; publish it before rerunning their standalone CI. Recheck standalone CI against hosted dependencies after each prerequisite is available; monorepo path overrides are only for candidate validation. Package publication is an explicit maintainer action.
+Publish **context menu 3.0.0, tree grid 0.15.1, and timeline 4.0.0 first**, then verify and publish **chart 10.0.0**, then verify and publish **PERT 0.3.0**. Chart and tree examples also resolve context menu; publish it before rerunning their standalone CI. Recheck standalone CI against hosted dependencies after each prerequisite is available; monorepo path overrides are only for candidate validation. Package publication is an explicit maintainer action.
 
 ## Migration
 
