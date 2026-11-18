@@ -35,4 +35,54 @@ The script discovers initialized submodules from Git's index, scans tracked and 
 
 Changes to `main` require an up-to-date passing `verify` check from GitHub Actions, one approving review, code-owner review, and resolved review conversations. New commits dismiss stale approvals. Normal merges use squash commits; force pushes and branch deletion are blocked. `@barneysspeedshop` owns all paths. The sole maintainer retains the administrator override for recovery and maintainer-authored pull requests.
 
-Actions tokens default to read-only and cannot approve pull requests. Workflows use immutable action commits, selected action providers, and no cross-repository checkout secret. Dependabot proposes action updates through pull requests. Private-fork workflows are disabled and cannot receive secrets or write tokens. If the server repository becomes public, configure approval for all outside-contributor workflows before running them. Never run unreviewed contributor code with deployment or publishing credentials.
+Actions tokens default to read-only and cannot approve pull requests. Workflows use immutable action commits, selected action providers, and no cross-repository checkout secret. Dependabot proposes action updates through pull requests. Private-fork workflows are disabled and cannot receive secrets or write tokens. All outside-contributor workflows require approval. Never run unreviewed contributor code with deployment or publishing credentials.
+
+
+## Supply-chain controls
+
+All eight public repositories require a reviewed pull request, code-owner approval, resolved conversations, and current GitHub Actions checks on main. Force pushes and branch deletion are disabled. The existing sole-maintainer administrator override remains available; protecting the maintainer account is therefore essential.
+
+Owned workflow references use immutable action commits, checkout does not retain Git credentials, and build/test jobs have read-only repository tokens. Static demo builds and gh-pages publishing run on separate runners. Only the publishing job receives contents-write permission, and it only downloads and publishes the static artifact. Coverage jobs retain their reports without committing directly to main. Workflows never receive package-publishing or cloud credentials.
+
+The plugin disables npm lifecycle scripts in both project configuration and installation commands. Unused Mocha, glob, and Electron test dependencies are removed. Its compile/lint/test sequence stays explicit; npm publication of the VS Code project is disabled. CI checks registry signatures and advisories. Signatures prove registry origin, not that the publisher's code is harmless. Lockfile hashes and signatures must be combined with review, containment, and limited credentials.
+
+One upstream issue is still open: [picomatch ReDoS GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf), affecting development-only lint tooling. There is no upstream patched version at this audit. The exception in the plugin's advisory checker is restricted to dev-only picomatch 4.0.7, expires 2026-12-02, and does not exempt any other advisory. The deployed extension's production dependency tree does not contain this package.
+
+### Verify the policy
+
+The Linux x86_64 CI gate installs the YAML parser from hash-pinned binary wheels and runs:
+
+```bash
+python3 scripts/test_supply_chain.py
+python3 scripts/audit_supply_chain.py
+```
+
+The audit covers the root and initialized submodules. It rejects movable action references, retained checkout credentials, privileged PR triggers, build jobs with write tokens, deployment jobs that execute code, npm installs with hooks enabled, and npm artifacts without registry URLs and SHA-512 integrity. The required root security check makes policy regressions visible before merging.
+
+For plugin work, use the isolated Linux checker:
+
+```bash
+python3 scripts/check_plugin_isolated.py
+```
+
+It requires bubblewrap and Node 24. It copies tracked source into a disposable filesystem with no host home, Git metadata, operator files, credentials, or Docker socket. npm installation and registry verification run with hooks disabled; dependency code then runs without networking. There is no unsafe fallback if sandboxing is unavailable.
+
+Rust build scripts, Dart build hooks, compiler plugins, and explicitly invoked JavaScript can all execute code. Run full ecosystem checks in disposable CI or a separate build account without publishing/cloud credentials. Keep package-publishing authentication out of the development/build profile. Use phishing-resistant MFA for maintainer and publisher accounts, keep recovery methods protected, and revoke obsolete tokens through the provider. Repository changes cannot verify those account controls or revoke copied credentials.
+
+Inspect/apply repository settings using the authenticated gh CLI (no secret values are read):
+
+```bash
+python3 scripts/harden_github.py
+python3 scripts/harden_github.py --apply --include-site
+```
+
+The separate marketing checkout has no npm build or GitHub Actions deployment. Its unused Actions service is disabled, and its EmailJS browser dependency uses an exact release and Subresource Integrity verified against the npm registry archive. Cloudflare deployment credentials and account settings remain provider-managed.
+
+
+### Resolved dependencies and container builds
+
+The full release gate queries OSV for resolved public Dart, Rust, and Go versions after dependency resolution. Only public package names and versions leave the runner; source and operator files are excluded. npm has its separate registry/signature gate. Lookup failures fail the check instead of reporting a clean result.
+
+This audit updated anyhow to 1.0.103 and rustix to 1.1.6 to resolve RUSTSEC-2026-0190 and RUSTSEC-2026-0486. OSV also reports the informational chrono maintenance notice RUSTSEC-2026-0543. Maintenance notices are printed separately from security vulnerabilities; the existing HLC implementation is not rewritten during this security change. The Cargo lockfile still pins chrono and its checksum, and builds use --locked.
+
+Server builder/runtime images are pinned to official multi-platform SHA-256 manifests. Rust compilation remains sequential before Dart compilation, and Docker uses both Cargo's locked resolution and Dart's enforced lockfile. Dependabot proposes reviewed Docker and Cargo updates; there is no automatic publishing or merging.

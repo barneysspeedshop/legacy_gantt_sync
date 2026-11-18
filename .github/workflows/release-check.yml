@@ -14,6 +14,75 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: dart_user
+          POSTGRES_PASSWORD: release-test-only
+          POSTGRES_DB: legacy_gantt
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U dart_user -d legacy_gantt"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Build sequential pinned server image
+        run: docker build --tag gantt-sync-security-check .
+      - name: Check runtime and FFI linkage
+        run: |
+          docker run --rm --entrypoint /bin/sh gantt-sync-security-check -ec '
+            test -x /app/bin/server
+            test -f /usr/lib/libgantt_solver_rs.so
+            ldd /usr/lib/libgantt_solver_rs.so > /tmp/linkage
+            cat /tmp/linkage
+            if grep -q "not found" /tmp/linkage; then exit 1; fi
+          '
+      - name: Start the compiled server against disposable services
+        run: |
+          docker run -d --name gantt-image-smoke --network host \
+            -e LEGACY_GANTT_SYNC_PORT=18080 \
+            -e JWT_SECRET=image-smoke-test-only \
+            -e DB_HOST=127.0.0.1 -e DB_PORT=5432 \
+            -e DB_USER=dart_user -e DB_PASS=release-test-only -e DB_NAME=legacy_gantt \
+            -e DB_SSL_MODE=disable -e REDIS_HOST=127.0.0.1 -e REDIS_PORT=6379 \
+            -e SUPERUSER_USERNAME=image-test -e SUPERUSER_PASSWORD=image-smoke-test-only \
+            gantt-sync-security-check
+          trap 'docker logs gantt-image-smoke; docker rm -f gantt-image-smoke' EXIT
+          for attempt in {1..60}; do
+            if curl -fsS http://127.0.0.1:18080/health > /tmp/image-health && grep -qx OK /tmp/image-health; then
+              exit 0
+            fi
+            sleep 1
+          done
+          exit 1
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Install pinned workflow parser
+        run: |
+          python3 -m venv "$RUNNER_TEMP/security-venv"
+          "$RUNNER_TEMP/security-venv/bin/pip" install --require-hashes --only-binary=:all: --no-deps -r scripts/security-requirements.txt
+      - name: Check workflow and dependency trust boundaries
+        run: |
+          "$RUNNER_TEMP/security-venv/bin/python" scripts/test_supply_chain.py
+          "$RUNNER_TEMP/security-venv/bin/python" scripts/audit_supply_chain.py
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -64,3 +133,9 @@ jobs:
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
       - name: Build and verify the ecosystem
         run: bash scripts/check_release.sh
+
+      - name: Check resolved Dart, Rust, and Go advisories
+        run: |
+          python3 -m venv "$RUNNER_TEMP/advisory-venv"
+          "$RUNNER_TEMP/advisory-venv/bin/pip" install --require-hashes --only-binary=:all: --no-deps -r scripts/security-requirements.txt
+          "$RUNNER_TEMP/advisory-venv/bin/python" scripts/audit_dependency_advisories.py
