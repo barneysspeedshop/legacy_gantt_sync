@@ -11,6 +11,7 @@ This monorepo is organized into the following key components:
 The next breaking UI release uses standalone `material_ui`, Dart 3.13+, and Flutter 3.47+. See the [release and migration guide](docs/internal/RELEASE.md) for candidate versions and publication order. The pure-Dart protocol and server transport are unchanged.
 
 - **[`legacy_gantt_chart`](legacy_gantt_chart/)**: The core Flutter widget for displaying interactive Gantt charts. Supports drag-and-drop, resizing, dynamic data loading, and CRDT-based synchronization.
+- **[`legacy_context_menu`](legacy_context_menu/)**: Nested and collapsible context menus used by the chart and tree examples, migrated to standalone Material UI.
 - **[`legacy_tree_grid`](legacy_tree_grid/)**: A powerful, high-performance tree grid widget used by the Gantt chart to display the task list.
 - **[`legacy_timeline_scrubber`](legacy_timeline_scrubber/)**: A dedicated timeline navigation widget that provides a high-level overview and helps users navigate large datasets.
 - **[`legacy_pert_chart`](legacy_pert_chart/)**: A Flutter widget for rendering PERT (Program Evaluation and Review Technique) charts. Uses a custom `PertLayout` ranking engine to position nodes based on dependency graphs.

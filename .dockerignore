@@ -16,6 +16,7 @@ doc/
 config/
 legacy_gantt_chart/
 legacy_tree_grid/
+legacy_context_menu/
 legacy_timeline_scrubber/
 legacy_pert_chart/
 legacy_gantt_plugin/
