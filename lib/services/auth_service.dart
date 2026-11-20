@@ -51,10 +51,14 @@ class AuthService {
   }
 
   Future<void> init() async {
-    await _execute((c) async {
-      await c.execute('CREATE SCHEMA IF NOT EXISTS auth');
+    await _execute(
+      (c) => c.runTx((transaction) async {
+        await transaction.execute(
+          "SELECT pg_advisory_xact_lock(hashtext('legacy_gantt_sync'), hashtext('auth_schema_init'))",
+        );
+        await transaction.execute('CREATE SCHEMA IF NOT EXISTS auth');
 
-      await c.execute('''
+        await transaction.execute('''
         CREATE TABLE IF NOT EXISTS auth.tenants (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
@@ -63,7 +67,7 @@ class AuthService {
         )
       ''');
 
-      await c.execute('''
+        await transaction.execute('''
         CREATE TABLE IF NOT EXISTS auth.users (
           id TEXT PRIMARY KEY,
           username TEXT UNIQUE NOT NULL,
@@ -75,9 +79,16 @@ class AuthService {
         )
       ''');
 
-      // Re-create table to enforce new schema for hashed tokens
-      await c.execute('DROP TABLE IF EXISTS auth.refresh_tokens');
-      await c.execute('''
+        final legacy = await transaction.execute('''
+        SELECT to_regclass('auth.refresh_tokens') IS NOT NULL AND NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = 'auth' AND table_name = 'refresh_tokens' AND column_name = 'token_hash'
+        )
+      ''');
+        if (legacy.single[0] == true) {
+          await transaction.execute('DROP TABLE auth.refresh_tokens');
+        }
+        await transaction.execute('''
         CREATE TABLE IF NOT EXISTS auth.refresh_tokens (
           id TEXT PRIMARY KEY,
           token_hash TEXT NOT NULL,
@@ -86,7 +97,8 @@ class AuthService {
           is_revoked BOOLEAN DEFAULT FALSE
         )
       ''');
-    });
+      }),
+    );
 
     JsonLogger.info('AUTH_DB_INIT', {'status': 'success'});
   }

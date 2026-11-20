@@ -10,6 +10,8 @@ This release consolidates the example around canonical local CRDT state and chan
 | `legacy_gantt_chart` | 11.0.0 | Protocol ^4.0.0; atomic local state, projection, and outbox; existing Dart 3.13 / Flutter 3.47 baseline |
 | `legacy_pert_chart` | 0.4.0 | Chart ^11.0.0 and protocol ^4.0.0; PERT layout unchanged |
 
+The release gate treats Dart/Flutter informational diagnostics and warnings as failures, and ESLint and Clippy must report zero warnings. Run it against the exact release commits before publication.
+
 Publish **protocol 4.0.0 first**, then rerun standalone chart CI against that hosted version and publish **chart 11.0.0**. Finally rerun PERT CI and publish **PERT 0.4.0**. Existing context menu 3.0.0, tree grid 0.15.1, and timeline 4.0.0 need no new release. Package publication remains an explicit maintainer action.
 
 Upgrade the server and clients together. Resource updates replace complete records, including metadata; clients must send every resource field rather than sparse patches. Resource and dependency deletions retain identity, deletion state, and clock, with canonical default payloads. Task deletions retain historical fields: an older field update can change a hidden tombstone's content/hash without resurrecting it. A reset advances the presence fence; it does not discard historical task fields needed for order-independent reconciliation.

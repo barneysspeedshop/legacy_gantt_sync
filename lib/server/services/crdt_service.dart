@@ -18,23 +18,7 @@ class CrdtService {
     if (_crdt != null) return;
 
     try {
-      _crdt = await retryForever(() async {
-        await _repairLegacyModifiedClocks();
-        return PostgresCrdt.open(
-          Platform.environment['DB_NAME'] ?? 'legacy_gantt',
-          host: Platform.environment['DB_HOST'] ?? 'localhost',
-          port: int.parse(Platform.environment['DB_PORT'] ?? '5432'),
-          username:
-              Platform.environment['DB_USER'] ??
-              (throw ArgumentError('DB_USER is required')),
-          password:
-              Platform.environment['DB_PASS'] ??
-              (throw ArgumentError('DB_PASS is required')),
-          sslMode: _getSslMode(),
-        );
-      }, description: 'Connect to Main DB');
-
-      await _initTables(_crdt!);
+      _crdt = await _openInitializedCrdt(description: 'Connect to Main DB');
 
       _initCompleter.complete(_crdt);
       JsonLogger.info('DB_INIT_SUCCESS', {});
@@ -45,7 +29,27 @@ class CrdtService {
     }
   }
 
-  Future<void> _repairLegacyModifiedClocks() async {
+  Future<PostgresCrdt> _openInitializedCrdt({
+    required String description,
+    int? maxRetries,
+  }) async {
+    final opened = await retryForever(
+      _openWithSchemaLock,
+      description: description,
+      maxRetries: maxRetries,
+    );
+    try {
+      await _initTables(opened.crdt);
+      return opened.crdt;
+    } finally {
+      // This dedicated session owns the database-scoped advisory lock. Closing
+      // it releases the lock without reserving a CRDT pool connection.
+      await opened.guard.close();
+    }
+  }
+
+  Future<({pg.Connection guard, PostgresCrdt crdt})>
+  _openWithSchemaLock() async {
     final connection = await pg.Connection.open(
       pg.Endpoint(
         host: Platform.environment['DB_HOST'] ?? 'localhost',
@@ -61,12 +65,29 @@ class CrdtService {
       settings: pg.ConnectionSettings(sslMode: _getSslMode()),
     );
     try {
+      await connection.execute(
+        "SELECT pg_advisory_lock(hashtext('legacy_gantt_sync'), hashtext('schema_init'))",
+      );
       final repaired = await repairLegacyModifiedClocks(connection);
       if (repaired > 0) {
         JsonLogger.info('LEGACY_MODIFIED_CLOCKS_REPAIRED', {'count': repaired});
       }
-    } finally {
+      final crdt = await PostgresCrdt.open(
+        Platform.environment['DB_NAME'] ?? 'legacy_gantt',
+        host: Platform.environment['DB_HOST'] ?? 'localhost',
+        port: int.parse(Platform.environment['DB_PORT'] ?? '5432'),
+        username:
+            Platform.environment['DB_USER'] ??
+            (throw ArgumentError('DB_USER is required')),
+        password:
+            Platform.environment['DB_PASS'] ??
+            (throw ArgumentError('DB_PASS is required')),
+        sslMode: _getSslMode(),
+      );
+      return (guard: connection, crdt: crdt);
+    } catch (_) {
       await connection.close();
+      rethrow;
     }
   }
 
@@ -251,22 +272,7 @@ class CrdtService {
         _crdt = null; // Clear bad instance
 
         try {
-          _crdt = await retryForever(
-            () async {
-              await _repairLegacyModifiedClocks();
-              return PostgresCrdt.open(
-                Platform.environment['DB_NAME'] ?? 'legacy_gantt',
-                host: Platform.environment['DB_HOST'] ?? 'localhost',
-                port: int.parse(Platform.environment['DB_PORT'] ?? '5432'),
-                username:
-                    Platform.environment['DB_USER'] ??
-                    (throw ArgumentError('DB_USER is required')),
-                password:
-                    Platform.environment['DB_PASS'] ??
-                    (throw ArgumentError('DB_PASS is required')),
-                sslMode: _getSslMode(),
-              );
-            },
+          _crdt = await _openInitializedCrdt(
             description: 'Reconnect to Main DB',
             maxRetries: 3,
           );
