@@ -22,6 +22,7 @@ export LD_LIBRARY_PATH="$PWD/gantt_solver_rs/target/release${LD_LIBRARY_PATH:+:$
 (cd legacy_gantt_protocol/reference_server_go && go test ./... && go vet ./... && test -z "$(gofmt -l .)")
 dart pub get --enforce-lockfile
 dart analyze --fatal-infos bin lib test
+dart run custom_lint --fatal-infos --fatal-warnings
 mkdir -p build
 dart compile exe bin/server.dart -o build/release-server
 dart test --concurrency=1
