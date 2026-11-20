@@ -367,7 +367,7 @@ packages:
       path: legacy_gantt_protocol
       relative: true
     source: path
-    version: "3.0.1"
+    version: "4.0.0"
   lints:
     dependency: "direct dev"
     description:

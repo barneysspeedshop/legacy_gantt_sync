@@ -1,3 +1,4 @@
+import 'package:postgres_crdt/postgres_crdt.dart' as pg;
 import 'package:legacy_gantt_sync/server/services/operation_service.dart';
 import 'package:legacy_gantt_sync/services/solver_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -16,38 +17,61 @@ void main() {
   late OperationService service;
   setUp(() {
     executor = _Executor();
+    when(() => executor.hlc).thenReturn(pg.Hlc.now('server-fixture'));
     service = OperationService(_Solver());
     when(() => executor.execute(any(), any())).thenAnswer((_) async {});
   });
 
   for (final type in ['UPDATE_TASK', 'UPDATE_RESOURCE', 'UPDATE_DEPENDENCY']) {
     test(
-      '$type rejects older/equal tombstone clocks but accepts a newer restore',
+      '$type keeps older/equal writes hidden and allows a newer restore',
       () async {
-        when(() => executor.query(any(), any())).thenAnswer(
-          (_) async => [
-            {'is_deleted': 1, 'last_updated': stale, 'deleted_at': deletion},
-          ],
-        );
-        final data = <String, dynamic>{
+        when(() => executor.query(any(), any())).thenAnswer((invocation) async {
+          final sql = invocation.positionalArguments.first as String;
+          if (!sql.startsWith('SELECT *')) return [];
+          return [
+            {
+              'id': 'entity',
+              'predecessor_task_id': 'p',
+              'successor_task_id': 's',
+              'name': '',
+              'parent_id': '',
+              'gantt_type': 'person',
+              'dependency_type': 'DELETE',
+              'lag': 0,
+              'metadata_json': '{}',
+              'is_deleted': 1,
+              'last_updated': deletion,
+              'deleted_at': deletion,
+              'field_timestamps': '{"isDeleted":"$deletion","name":"$stale"}',
+            },
+          ];
+        });
+        Map<String, dynamic> candidate() => {
           'id': 'entity',
           'name': 'Restored',
           'predecessorTaskId': 'p',
           'successorTaskId': 's',
-          'type': 'finishToStart',
+          'type': type == 'UPDATE_RESOURCE' ? 'person' : 'finishToStart',
         };
-        for (final timestamp in [stale, deletion]) {
-          await expectLater(
-            service.applySingleOperation(
-              executor,
-              'tenant',
-              type,
-              data,
-              timestamp,
-            ),
-            throwsA(isA<StaleTombstoneOperation>()),
+        for (final clock in [stale, deletion]) {
+          final data = candidate();
+          await service.applySingleOperation(
+            executor,
+            'tenant',
+            type,
+            data,
+            clock,
           );
+          if (type == 'UPDATE_DEPENDENCY') {
+            expect(data['type'], 'DELETE');
+            expect(data['lag'], 0);
+          } else {
+            expect(data['isDeleted'], true);
+            if (type == 'UPDATE_RESOURCE') expect(data['name'], '');
+          }
         }
+        final data = candidate();
         await service.applySingleOperation(
           executor,
           'tenant',
@@ -55,43 +79,48 @@ void main() {
           data,
           restore,
         );
-        final arguments =
-            verify(() => executor.execute(any(), captureAny())).captured.single
-                as List;
-        expect(arguments, contains(restore));
-        expect(
-          arguments,
-          contains(type == 'UPDATE_DEPENDENCY' ? 'p' : 'entity'),
-        );
+        expect(data['lastUpdated'], restore);
+        if (type == 'UPDATE_DEPENDENCY') {
+          expect(data['type'], 'finishToStart');
+        } else {
+          expect(data['isDeleted'], false);
+          expect(data['name'], 'Restored');
+        }
       },
     );
   }
 
   test(
-    'bulk filtering rejects stale tombstone rows and preserves live/newer rows',
+    'bulk replay keeps historical fields without resurrecting tombstones',
     () async {
-      when(() => executor.query(any(), any())).thenAnswer(
-        (_) async => [
+      when(() => executor.query(any(), any())).thenAnswer((invocation) async {
+        if (!(invocation.positionalArguments.first as String).startsWith(
+          'SELECT *',
+        )) {
+          return [];
+        }
+        return [
           {
-            'id': 'stale',
+            'id': 'hidden',
+            'name': 'Old',
             'is_deleted': 1,
-            'last_updated': stale,
+            'last_updated': deletion,
             'deleted_at': deletion,
+            'field_timestamps':
+                '{"isDeleted":"$deletion","name":"2026-01-01T00:00:08.000Z-0000-test"}',
           },
           {
-            'id': 'restore',
-            'is_deleted': 1,
-            'last_updated': stale,
-            'deleted_at': deletion,
+            'id': 'live',
+            'name': 'Newer live row',
+            'is_deleted': 0,
+            'last_updated': restore,
           },
-          {'id': 'live', 'is_deleted': 0, 'last_updated': restore},
-        ],
-      );
+        ];
+      });
       final data = <String, dynamic>{
         'tasks': <Map<String, dynamic>>[
-          {'id': 'stale', 'name': 'Rejected stale row', 'timestamp': stale},
-          {'id': 'restore', 'name': 'Restored row', 'timestamp': restore},
-          {'id': 'live', 'name': 'Independent live row', 'timestamp': stale},
+          {'id': 'hidden', 'name': 'Historical name', 'timestamp': stale},
+          {'id': 'live', 'name': 'Older live name', 'timestamp': stale},
         ],
       };
       await service.applySingleOperation(
@@ -101,16 +130,11 @@ void main() {
         data,
         restore,
       );
-      expect((data['tasks'] as List).map((task) => task['id']).toList(), [
-        'restore',
-        'live',
-      ]);
-      final arguments =
-          verify(() => executor.execute(any(), captureAny())).captured.single
-              as List;
-      expect(arguments, contains('Restored row'));
-      expect(arguments, contains('Independent live row'));
-      expect(arguments, isNot(contains('Rejected stale row')));
+      final tasks = data['tasks'] as List;
+      expect(tasks[0]['name'], 'Historical name');
+      expect(tasks[0]['isDeleted'], true);
+      expect(tasks[1]['name'], 'Newer live row');
+      expect(tasks[1]['isDeleted'], false);
     },
   );
 }

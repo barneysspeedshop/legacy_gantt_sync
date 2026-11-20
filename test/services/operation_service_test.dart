@@ -1,3 +1,4 @@
+import 'package:postgres_crdt/postgres_crdt.dart' as pg;
 import 'package:legacy_gantt_sync/server/constants/protocol_constants.dart';
 import 'package:legacy_gantt_sync/server/services/operation_service.dart';
 import 'package:legacy_gantt_sync/services/solver_service.dart';
@@ -17,6 +18,7 @@ void main() {
   setUp(() {
     mockSolverService = MockSolverService();
     mockExecutor = MockCrdtExecutor();
+    when(() => mockExecutor.hlc).thenReturn(pg.Hlc.now('server-fixture'));
     operationService = OperationService(mockSolverService);
 
     // Default behaviors
@@ -25,8 +27,8 @@ void main() {
   });
 
   group('OperationService', () {
-    test('INSERT_TASK delegates to UpsertTaskHandler', () async {
-      final opData = {
+    test('INSERT_TASK persists the canonical task', () async {
+      final opData = <String, dynamic>{
         'id': 'task-1',
         'name': 'New Task',
         'startDate': '2023-01-01',
@@ -51,7 +53,7 @@ void main() {
     });
 
     test('INSERT_DEPENDENCY delegates to InsertDependencyHandler', () async {
-      final opData = {
+      final opData = <String, dynamic>{
         'predecessorTaskId': 'task-1',
         'successorTaskId': 'task-2',
         'type': 'finishToStart',

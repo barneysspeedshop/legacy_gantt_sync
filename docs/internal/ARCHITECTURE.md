@@ -23,7 +23,7 @@ Clients transmit a `lastSynced` timestamp. The server queries for all records wh
 To detect desyncs (where a client misses an update but thinks it's up to date), the system uses Merkle Trees.
 1.  Both Client and Server compute a **Merkle Root** hash of their entire state (Tasks + Dependencies + Resources).
 2.  The Client sends its Root to the Server.
-3.  If the roots mismatch, the Server forces a **Full Sync** (reset) to get the Client back to a consistent state.
+3.  A mismatch triggers reconciliation of canonical records, including tombstones. Synchronization replay does not issue the user-facing `RESET_DATA` command.
 
 ### 3. WebSocket Handler
 Manages persistent connections.
@@ -39,3 +39,11 @@ Resources are a hierarchical data structure.
 
 ### Tasks & Dependencies
 Standard Gantt data structures. Dependencies support `finishToStart`, `startToStart`, etc., and include `lag` times.
+
+## Canonical local state and operation ownership
+
+The persistent chart example owns one canonical CRDT state per tenant scope. Every local command commits canonical entities, derived SQLite read models, and durable outgoing operations atomically, then publishes one coherent snapshot to the UI. Network delivery happens after the local commit. Incoming live messages, initial replay, and Merkle recovery enter the same merge path. The widget receives presence traffic separately and does not independently reduce entity messages.
+
+Tasks use per-field clocks and a presence register. Historical fields can merge while a task remains deleted; an older operation cannot override a newer deletion. Reset acts as a presence fence, including for records first seen after reset. Resources are complete LWW records, and resource/dependency tombstones carry canonical minimal payloads. The server serializes tenant reset and entity transactions with a PostgreSQL advisory transaction lock and applies the shared task merge engine before persisting and broadcasting accepted state.
+
+The outgoing queue persists before any network send, even while connected. A successful WebSocket handoff currently removes the queue entry; there is no durable server acknowledgement in this protocol. That distinction limits delivery guarantees across a crash immediately after handoff.

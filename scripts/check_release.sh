@@ -11,6 +11,7 @@ done
 
 python3 scripts/prepare_local_packages.py
 python3 scripts/audit_open_source.py
+python3 scripts/check_state_ownership.py
 
 # Finish Rust compilation before Dart/Flutter builds on memory-constrained hosts.
 export CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-2}"

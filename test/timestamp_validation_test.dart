@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:http/http.dart' as http;
+import 'package:legacy_gantt_protocol/legacy_gantt_protocol.dart' show Hlc;
 import 'package:test/test.dart';
 import 'package:async/async.dart';
 
@@ -289,9 +290,8 @@ void main() {
         if (json['type'] == 'INSERT_TASK' &&
             json['data']['id'] == 'test-valid') {
           echoReceived = true;
-          // Expect timestamp to be present. Server might return it as string.
-          // Don't strict check equality if format changes, but it should match hlcParam
-          expect(json['timestamp'], equals(hlcParam));
+          expect(json['timestamp'], Hlc.parse(hlcParam).toString());
+          expect(json['data']['lastUpdated'], json['timestamp']);
           break;
         }
       }
