@@ -66,6 +66,8 @@ class WebSocketHandler {
     _initializeSession(channel, clientInfo);
 
     try {
+      // Await each commit before reading the next frame: correlated Merkle root
+      // requests are barriers after preceding repair batches.
       await for (final rawMessage in channel.stream) {
         try {
           final envelope = ProtocolMessage.fromBuffer(rawMessage as List<int>);
@@ -363,6 +365,7 @@ class WebSocketHandler {
       _sendJsonAsProtobuf(channel, {
         'type': 'MERKLE_ROOT',
         'data': {'root': root},
+        if (jsonMap['channel'] is String) 'channel': jsonMap['channel'],
         'timestamp': Hlc.fromDate(DateTime.now(), 'server-ws').toString(),
       });
       return;
@@ -384,11 +387,20 @@ class WebSocketHandler {
         clientInfo.tenantId,
         prefix,
       );
-      // We transmit them back as a BATCH_UPDATE so the client's CRDT engine processes them
+      // BatchUpdatePayload carries entities only. Send reset control first,
+      // then the batch response also completes an empty recovery request.
+      for (final operation in operations.where(
+        (op) => op['type'] == 'RESET_DATA',
+      )) {
+        _sendJsonAsProtobuf(channel, operation);
+      }
+      final entities = operations
+          .where((op) => op['type'] != 'RESET_DATA')
+          .toList();
       _sendJsonAsProtobuf(channel, {
         'type': 'BATCH_UPDATE',
-        'channel': prefix,
-        'data': {'operations': operations, 'merklePrefix': prefix},
+        'channel': jsonMap['channel'] is String ? jsonMap['channel'] : prefix,
+        'data': {'operations': entities, 'merklePrefix': prefix},
         'timestamp': Hlc.fromDate(DateTime.now(), 'server-ws').toString(),
       });
       return;

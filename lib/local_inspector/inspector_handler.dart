@@ -221,6 +221,9 @@ class InspectorHandler {
       tasks: rows['tasks']!,
       dependencies: rows['dependencies']!,
       resources: rows['resources']!,
+      resetTimestamp: MerkleService.resetTimestampFromRows(
+        rows['metadata'] ?? [],
+      ),
     );
     return _json({
       'data': {'tenantId': tenantId, 'root': tree.root.hash},
@@ -239,6 +242,9 @@ class InspectorHandler {
       tasks: rows['tasks']!,
       dependencies: rows['dependencies']!,
       resources: rows['resources']!,
+      resetTimestamp: MerkleService.resetTimestampFromRows(
+        rows['metadata'] ?? [],
+      ),
     );
     final node = tree.getNode(prefix);
     return _json({

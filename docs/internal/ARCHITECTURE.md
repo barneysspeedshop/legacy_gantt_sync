@@ -21,8 +21,8 @@ Clients transmit a `lastSynced` timestamp. The server queries for all records wh
 
 #### Merkle Integrity Check (`MerkleService`)
 To detect desyncs (where a client misses an update but thinks it's up to date), the system uses Merkle Trees.
-1.  Both Client and Server compute a **Merkle Root** hash of their entire state (Tasks + Dependencies + Resources).
-2.  The Client sends its Root to the Server.
+1.  Both Client and Server compute a **Merkle Root** hash of their entire canonical state (tasks, dependencies, resources, and the reset fence), including causal clocks.
+2.  The client requests the server root and compares it with its durable local state.
 3.  A mismatch triggers reconciliation of canonical records, including tombstones. Synchronization replay does not issue the user-facing `RESET_DATA` command.
 
 ### 3. WebSocket Handler
@@ -46,4 +46,4 @@ The persistent chart example owns one canonical CRDT state per tenant scope. Eve
 
 Tasks use per-field clocks and a presence register. Historical fields can merge while a task remains deleted; an older operation cannot override a newer deletion. Reset acts as a presence fence, including for records first seen after reset. Resources are complete LWW records, and resource/dependency tombstones carry canonical minimal payloads. The server serializes tenant reset and entity transactions with a PostgreSQL advisory transaction lock and applies the shared task merge engine before persisting and broadcasting accepted state.
 
-The outgoing queue persists before any network send, even while connected. A successful WebSocket handoff currently removes the queue entry; there is no durable server acknowledgement in this protocol. That distinction limits delivery guarantees across a crash immediately after handoff.
+The outgoing queue persists before any network send, even while connected. A successful WebSocket handoff removes the queue entry; there is no durable server acknowledgement in this protocol. To recover handoffs lost before server persistence, the persistent client reconciles both directions on connection: compare causal roots, atomically requeue canonical local records with their original clocks, flush, pull missing server state, and verify matching roots. Task field clocks, entity clocks, and the reset fence participate in hashing. Root and range requests use correlated responses; silence never establishes completion. Reconciliation is bounded and fails clearly if convergence cannot be verified. Tenant changes serialize with repair enqueueing to prevent cross-tenant work.

@@ -443,16 +443,20 @@ class CrdtService {
       'isDeleted': isDeleted,
       'rowId': row['row_id']?.toString(),
       'metadataJson': jsonEncode(
-        MerkleHashNormalizer.normalizeTaskMetadata({
+        MerkleHashNormalizer.completeTaskMetadata({
           ...metadata,
-          'color': row['color'],
-          'textColor': row['text_color'],
+          'color': MerkleHashNormalizer.normalizeColorHex(row['color']),
+          'textColor': MerkleHashNormalizer.normalizeColorHex(
+            row['text_color'],
+          ),
           'originalId': metadata['originalId'],
           'usesWorkCalendar': _toBool(row['uses_work_calendar']),
           'propagatesMoveToChildren':
               row['propagates_move_to_children'] == null ||
               _toBool(row['propagates_move_to_children']),
-          'resizePolicy': row['resize_policy'],
+          'resizePolicy': MerkleHashNormalizer.normalizeResizePolicy(
+            row['resize_policy'],
+          ),
           'baselineStart': MerkleHashNormalizer.formatProtocolDateOrNull(
             row['baseline_start'],
           ),
@@ -477,25 +481,14 @@ class CrdtService {
     final storedClocks = fieldTimestamps is String && fieldTimestamps.isNotEmpty
         ? jsonDecode(fieldTimestamps) as Map<String, dynamic>
         : <String, dynamic>{};
-    cleanData['fieldTimestamps'] = <String, dynamic>{
-      for (final field in const [
-        'rowId',
-        'start',
-        'end',
-        'name',
-        'completion',
-        'resourceId',
-        'parentId',
-        'notes',
-        'isSummary',
-        'isMilestone',
-        'isDeleted',
-      ])
-        field: lastUpdated,
-      for (final field in ProtobufMapper.metadataFromJson(cleanData).keys)
-        field: lastUpdated,
-      ...storedClocks,
-    };
+    cleanData['fieldTimestamps'] =
+        MerkleHashNormalizer.normalizeTaskFieldTimestamps(
+          fieldTimestamps: storedClocks.map(
+            (key, value) => MapEntry(key, value as String),
+          ),
+          lastUpdated: lastUpdated,
+          metadata: ProtobufMapper.metadataFromJson(cleanData),
+        );
 
     return envelope;
   }

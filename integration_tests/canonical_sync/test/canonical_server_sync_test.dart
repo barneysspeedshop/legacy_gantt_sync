@@ -31,12 +31,34 @@ class Peer {
       if (json['type'] == 'ERROR') fail('Server error: ${json['error']}');
       final op = Operation.fromJson({
         ...json,
-        'data': json['data'] ?? <String, dynamic>{},
+        'data': {
+          ...?json['data'] as Map<String, dynamic>?,
+          if (json['channel'] != null) '__responseChannel': json['channel'],
+        },
         'timestamp': json['timestamp'] ?? Hlc.zero.toString(),
         'actorId': json['actorId'] ?? '',
       });
       if (predicate(op)) return op;
     }
+  }
+
+  int _rootRequest = 0;
+  Future<Operation> merkleRoot() async {
+    final nonce = 'fixture-root-${++_rootRequest}';
+    channel.sink.add(
+      ProtobufMapper.toProtobuf({
+        'type': 'GET_MERKLE_ROOT',
+        'data': <String, dynamic>{},
+        'timestamp': Hlc.zero.toString(),
+        'actorId': 'verifier',
+        'channel': nonce,
+      }).writeToBuffer(),
+    );
+    return until(
+      (operation) =>
+          operation.type == 'MERKLE_ROOT' &&
+          operation.data['__responseChannel'] == nonce,
+    );
   }
 
   Future<void> snapshot(ProtocolStateStore store) async {
@@ -335,17 +357,7 @@ void main() {
         ),
       );
       await verifier.snapshot(ProtocolStateStore(Future.value(replayDatabase)));
-      verifier.send(
-        Operation(
-          type: 'GET_MERKLE_ROOT',
-          data: {},
-          timestamp: Hlc.zero,
-          actorId: 'verifier',
-        ),
-      );
-      final serverRoot = await verifier.until(
-        (operation) => operation.type == 'MERKLE_ROOT',
-      );
+      final serverRoot = await verifier.merkleRoot();
       expect(roots.first.root.hash, serverRoot.data['root']);
 
       final taskRow = (await databases.first.query(
@@ -401,19 +413,8 @@ void main() {
         Future.value(databases.first),
         scope: jsonEncode([ws, tenantId]),
       ).computeMerkleTree()).root.hash;
-      verifier.send(
-        Operation(
-          type: 'GET_MERKLE_ROOT',
-          data: {},
-          timestamp: Hlc.zero,
-          actorId: 'verifier',
-        ),
-      );
-      final mergedRoot = await verifier.until(
-        (operation) =>
-            operation.type == 'MERKLE_ROOT' &&
-            operation.data['root'] == expectedMergedRoot,
-      );
+      final mergedRoot = await verifier.merkleRoot();
+      expect(mergedRoot.data['root'], expectedMergedRoot);
       verifier.send(
         Operation(
           type: 'subscribe',
@@ -606,8 +607,7 @@ void main() {
         expect(deletedRoot, isNot(liveRoot));
         final cold = await newStore();
         final verifier = await connect(cold);
-        verifier.send(operation('GET_MERKLE_ROOT', <String, dynamic>{}));
-        final response = await verifier.until((op) => op.type == 'MERKLE_ROOT');
+        final response = await verifier.merkleRoot();
         expect(deletedRoot, response.data['root']);
         expect(
           (await senderState.computeMerkleTree()).root.hash,
@@ -685,10 +685,7 @@ void main() {
         );
         final staleReplay = await newStore();
         final staleVerifier = await connect(staleReplay);
-        staleVerifier.send(operation('GET_MERKLE_ROOT', <String, dynamic>{}));
-        final staleResponse = await staleVerifier.until(
-          (op) => op.type == 'MERKLE_ROOT',
-        );
+        final staleResponse = await staleVerifier.merkleRoot();
         expect(staleResponse.data['root'], historicalRoot);
         expect(
           (await staleReplay.computeMerkleTree()).root.hash,
@@ -730,12 +727,7 @@ void main() {
         }
         final restoredState = await newStore();
         final restoredVerifier = await connect(restoredState);
-        restoredVerifier.send(
-          operation('GET_MERKLE_ROOT', <String, dynamic>{}),
-        );
-        final restoredResponse = await restoredVerifier.until(
-          (op) => op.type == 'MERKLE_ROOT',
-        );
+        final restoredResponse = await restoredVerifier.merkleRoot();
         expect(restoredResponse.data['root'], isNot(deletedRoot));
         expect(
           (await senderState.computeMerkleTree()).root.hash,
@@ -853,9 +845,7 @@ void main() {
           afterEditRoot,
         );
         replayVerifier.send(reset);
-        final afterReplay = await replayVerifier.until(
-          (op) => op.type == 'MERKLE_ROOT',
-        );
+        final afterReplay = await replayVerifier.merkleRoot();
         expect(afterReplay.data['root'], afterEditRoot);
         final finalReplay = await newStore();
         await connect(finalReplay);
@@ -866,6 +856,232 @@ void main() {
       },
     );
   }
+
+  test('public reconnect repairs a successfully handed off but lost same-value write', () async {
+    final unique = DateTime.now().microsecondsSinceEpoch;
+    final superuser = await post('/auth/login', {
+      'username': 'superuser',
+      'password': 'superuser',
+    });
+    final username = 'repair-admin-$unique';
+    final tenant = await post('/api/admin/tenants', {
+      'tenantName': 'repair-$unique',
+      'adminUsername': username,
+      'adminPassword': 'test-password',
+    }, token: superuser['accessToken'] as String);
+    final tenantId = tenant['tenantId'] as String;
+    final auth = await post('/auth/login', {
+      'username': username,
+      'password': 'test-password',
+    });
+    final scope = jsonEncode([ws, tenantId]);
+    final directory = await Directory.systemTemp.createTemp(
+      'gantt-lost-handoff-',
+    );
+    final path = '${directory.path}/offline.sqlite';
+    final peers = <Peer>[];
+    final databases = <SqliteCrdt>[];
+    GanttViewModel? client;
+    addTearDown(() async {
+      await client?.disposeAsync();
+      for (final peer in peers) {
+        await peer.close();
+      }
+      for (final db in databases.reversed) {
+        await db.close();
+      }
+      await directory.delete(recursive: true);
+    });
+    Future<Peer> peer(ProtocolStateStore state) async {
+      final connection = Peer(
+        IOWebSocketChannel.connect(
+          ws,
+          headers: {'Authorization': 'Bearer ${auth['accessToken']}'},
+        ),
+      );
+      peers.add(connection);
+      await connection.channel.ready;
+      connection.send(
+        Operation(
+          type: 'subscribe',
+          data: {'channel': tenantId},
+          timestamp: Hlc.zero,
+          actorId: 'repair',
+        ),
+      );
+      await connection.snapshot(state);
+      return connection;
+    }
+
+    Operation operation(String type, Map<String, dynamic> data, int tick) =>
+        Operation(
+          type: type,
+          data: data,
+          timestamp: Hlc(millis: tick, counter: 0, nodeId: 'repair'),
+          actorId: 'repair',
+        );
+    final baseTask = ProtocolTask(
+      id: 'task',
+      rowId: 'row',
+      name: 'A',
+      notes: 'Initial notes',
+      start: '2026-11-20T00:00:00.000Z',
+      end: '2026-11-21T00:00:00.000Z',
+      lastUpdated: const Hlc(millis: 100, counter: 0, nodeId: 'repair').toString(),
+    );
+    baseTask.fieldTimestamps.addAll(baseTask.normalizedFieldTimestamps);
+    final initial = operation(
+      'UPDATE_TASK',
+      ProtobufMapper.taskToJson(baseTask),
+      100,
+    );
+    Map<String, dynamic> snapshot(
+      String name,
+      String notes,
+      int nameClock,
+      int notesClock,
+      int presenceClock,
+    ) {
+      final task = baseTask.deepCopy()
+        ..name = name
+        ..notes = notes
+        ..lastUpdated = Hlc(
+          millis: presenceClock,
+          counter: 0,
+          nodeId: 'repair',
+        ).toString();
+      task.fieldTimestamps.addAll({
+        'name': Hlc(millis: nameClock, counter: 0, nodeId: 'repair').toString(),
+        'notes': Hlc(
+          millis: notesClock,
+          counter: 0,
+          nodeId: 'repair',
+        ).toString(),
+        'isDeleted': Hlc(
+          millis: presenceClock,
+          counter: 0,
+          nodeId: 'repair',
+        ).toString(),
+      });
+      return ProtobufMapper.taskToJson(task);
+    }
+
+    final lost = operation(
+      'UPDATE_TASK',
+      snapshot('A', 'Initial notes', 200, 100, 200),
+      200,
+    );
+    // This is an independent remote note edit: its name register still has
+    // clock 100, so receiving it cannot implicitly repair the lost A200 write.
+    final notes = operation(
+      'UPDATE_TASK',
+      snapshot('A', 'Shared notes', 100, 300, 300),
+      300,
+    );
+    var db = await GanttDb.open(path);
+    databases.add(db);
+    var state = ProtocolStateStore(Future.value(db), scope: scope);
+    await state.applyOperations(
+      [initial, lost, notes],
+      local: true,
+      enqueue: true,
+      bindScope: true,
+    );
+    expect(
+      (await db.query('SELECT id FROM offline_queue WHERE is_deleted = 0')),
+      hasLength(3),
+    );
+    // Model a socket accepting the packet and its queue row being removed,
+    // followed by the packet never reaching the server.
+    await db.execute('DELETE FROM offline_queue');
+    final expectedRoot = (await state.computeMerkleTree()).root.hash;
+    await db.close();
+    databases.remove(db);
+
+    final serverDb = await GanttDb.open(inMemoryDatabasePath);
+    databases.add(serverDb);
+    final serverState = ProtocolStateStore(Future.value(serverDb));
+    final writer = await peer(serverState);
+    final watcher = await peer(serverState);
+    for (final update in [initial, notes]) {
+      writer.send(update);
+    }
+    writer.send(
+      operation('CURSOR_MOVE', {'integrationBarrier': 'seeded'}, 400),
+    );
+    while (true) {
+      final received = await watcher.until((_) => true);
+      if (received.type == 'CURSOR_MOVE') {
+        break;
+      }
+      await serverState.applyOperations([received]);
+    }
+    expect((await serverState.readState()).tasks.single.name, 'A');
+    expect(
+      (await serverState.computeMerkleTree()).root.hash,
+      isNot(expectedRoot),
+      reason:
+          'Equal values with different causal field clocks must trigger repair',
+    );
+    writer.send(
+      operation(
+        'UPDATE_TASK',
+        snapshot('B', 'Initial notes', 150, 100, 150),
+        150,
+      ),
+    );
+    await serverState.applyOperations([
+      await watcher.until((op) => op.type == 'UPDATE_TASK'),
+    ]);
+    expect((await serverState.readState()).tasks.single.name, 'B');
+
+    Future<void> reopenAndConnect() async {
+      db = await GanttDb.open(path);
+      databases.add(db);
+      state = ProtocolStateStore(Future.value(db), scope: scope);
+      client = GanttViewModel(
+        database: Future.value(db),
+        useLocalDatabase: true,
+      );
+      await client!.initialized;
+      expect(client!.allTasks.single.name, 'A');
+      expect(
+        (await db.query('SELECT id FROM offline_queue WHERE is_deleted = 0')),
+        isEmpty,
+      );
+      await client!.connectSync(
+        uri: base,
+        tenantId: tenantId,
+        username: username,
+        password: 'test-password',
+      );
+    }
+
+    await reopenAndConnect();
+    final repaired = await writer.until(
+      (op) => op.type == 'MERKLE_ROOT' && op.data['root'] == expectedRoot,
+    );
+    expect(repaired.data['root'], expectedRoot);
+    expect(client!.allTasks.single.name, 'A');
+    expect(client!.allTasks.single.notes, 'Shared notes');
+    expect((await state.computeMerkleTree()).root.hash, expectedRoot);
+    await client!.disconnectSync();
+    await client!.disposeAsync();
+    client = null;
+    await db.close();
+    databases.remove(db);
+    await reopenAndConnect();
+    expect(client!.allTasks.single.name, 'A');
+    expect((await state.computeMerkleTree()).root.hash, expectedRoot);
+    final coldDb = await GanttDb.open(inMemoryDatabasePath);
+    databases.add(coldDb);
+    final cold = ProtocolStateStore(Future.value(coldDb));
+    final verifier = await peer(cold);
+    expect((await verifier.merkleRoot()).data['root'], expectedRoot);
+    expect((await cold.readState()).tasks.single.name, 'A');
+    expect((await cold.readState()).tasks.single.notes, 'Shared notes');
+    expect((await cold.computeMerkleTree()).root.hash, expectedRoot);
+  });
 
   test('server restarts with the persisted synchronization clocks', () async {
     server!.kill();
