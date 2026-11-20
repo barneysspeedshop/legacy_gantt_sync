@@ -23,10 +23,17 @@ class MerkleService {
       [tenantId],
     );
 
+    final metadata = await crdtService.query(
+      tenantId,
+      'SELECT last_reset_at FROM project_metadata WHERE tenant_id = ?',
+      [tenantId],
+    );
+
     return buildTreeFromRows(
       tasks: tasks,
       dependencies: deps,
       resources: resources,
+      resetTimestamp: resetTimestampFromRows(metadata),
     );
   }
 
@@ -38,6 +45,7 @@ class MerkleService {
     required List<Map<String, dynamic>> tasks,
     required List<Map<String, dynamic>> dependencies,
     required List<Map<String, dynamic>> resources,
+    Hlc? resetTimestamp,
   }) {
     final items = <MapEntry<String, String>>[];
     for (final row in tasks) {
@@ -58,7 +66,17 @@ class MerkleService {
       );
       items.add(MapEntry(hlcStr, _hashResource(row)));
     }
+    if (resetTimestamp != null) {
+      items.add(CRDTEngine.resetMerkleEntry(resetTimestamp));
+    }
     return MerkleTree.build(items);
+  }
+
+  static Hlc? resetTimestampFromRows(List<Map<String, dynamic>> rows) {
+    final value = rows.firstOrNull?['last_reset_at'];
+    return value == null || value.toString().isEmpty
+        ? null
+        : Hlc.parse(value.toString());
   }
 
   /// Generates the Merkle Root hash for a given tenant.
@@ -123,6 +141,21 @@ class MerkleService {
         );
 
     final List<Map<String, dynamic>> operations = [];
+    final resetRows = await crdtService.query(
+      tenantId,
+      'SELECT last_reset_at FROM project_metadata WHERE tenant_id = ?',
+      [tenantId],
+    );
+    final reset = resetTimestampFromRows(resetRows);
+    if (reset != null &&
+        MerkleHashNormalizer.merkleMinutePrefix(reset.toString()) == prefix) {
+      operations.add({
+        'type': 'RESET_DATA',
+        'data': <String, dynamic>{},
+        'timestamp': reset.toString(),
+        'actorId': 'server-sync',
+      });
+    }
 
     for (final row in tasks) {
       operations.add(crdtService.formatTaskOperation(row));
@@ -141,6 +174,8 @@ class MerkleService {
     // We sort the operations list so that any operation that is a DELETION
     // (or represents a tombstone) comes after INSERTs/UPDATEs.
     operations.sort((a, b) {
+      if (a['type'] == 'RESET_DATA') return b['type'] == 'RESET_DATA' ? 0 : -1;
+      if (b['type'] == 'RESET_DATA') return 1;
       final isADelete = _isOperationADelete(a);
       final isBDelete = _isOperationADelete(b);
 

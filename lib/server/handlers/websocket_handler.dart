@@ -66,6 +66,8 @@ class WebSocketHandler {
     _initializeSession(channel, clientInfo);
 
     try {
+      // Await each commit before reading the next frame: correlated Merkle root
+      // requests are barriers after preceding repair batches.
       await for (final rawMessage in channel.stream) {
         try {
           final envelope = ProtocolMessage.fromBuffer(rawMessage as List<int>);
@@ -244,8 +246,8 @@ class WebSocketHandler {
         );
       }
 
-      // 4. Return original if valid
-      return clientTimestamp;
+      // Normalize once before persistence, comparison and broadcast.
+      return hlc.toString();
     } catch (e) {
       // If parsing fails, it's garbage data. Reject it.
       JsonLogger.warn('INVALID_HLC_TIMESTAMP', {
@@ -307,34 +309,6 @@ class WebSocketHandler {
       return;
     }
 
-    // Check last_reset_at to prevent stale data injection
-    if (type != ProtocolConstants.resetData &&
-        type != ProtocolConstants.cursorMove &&
-        type != ProtocolConstants.presenceUpdate &&
-        type != ProtocolConstants.ghostUpdate) {
-      try {
-        final resetMeta = await crdtService.query(
-          targetChannel,
-          'SELECT last_reset_at FROM project_metadata WHERE tenant_id = ?',
-          [targetChannel],
-        );
-        if (resetMeta.isNotEmpty) {
-          final lastResetAt = resetMeta.first['last_reset_at'] as String?;
-          if (lastResetAt != null && timestamp.compareTo(lastResetAt) <= 0) {
-            JsonLogger.warn('OP_STALE_REJECTED', {
-              'user': actorId,
-              'type': type,
-              'timestamp': timestamp,
-              'lastResetAt': lastResetAt,
-            });
-            return; // completely ignore and don't broadcast
-          }
-        }
-      } catch (e) {
-        JsonLogger.error('RESET_CHECK_ERROR', {'error': e.toString()});
-      }
-    }
-
     // Single Operation
     final isDbOp = const {
       ProtocolConstants.insertTask,
@@ -377,6 +351,8 @@ class WebSocketHandler {
             );
           }
         });
+      } on StaleTombstoneOperation {
+        return;
       } catch (e) {
         JsonLogger.error('DB_WRITE_ERROR', {
           'error': e.toString(),
@@ -389,6 +365,7 @@ class WebSocketHandler {
       _sendJsonAsProtobuf(channel, {
         'type': 'MERKLE_ROOT',
         'data': {'root': root},
+        if (jsonMap['channel'] is String) 'channel': jsonMap['channel'],
         'timestamp': Hlc.fromDate(DateTime.now(), 'server-ws').toString(),
       });
       return;
@@ -410,11 +387,20 @@ class WebSocketHandler {
         clientInfo.tenantId,
         prefix,
       );
-      // We transmit them back as a BATCH_UPDATE so the client's CRDT engine processes them
+      // BatchUpdatePayload carries entities only. Send reset control first,
+      // then the batch response also completes an empty recovery request.
+      for (final operation in operations.where(
+        (op) => op['type'] == 'RESET_DATA',
+      )) {
+        _sendJsonAsProtobuf(channel, operation);
+      }
+      final entities = operations
+          .where((op) => op['type'] != 'RESET_DATA')
+          .toList();
       _sendJsonAsProtobuf(channel, {
         'type': 'BATCH_UPDATE',
-        'channel': prefix,
-        'data': {'operations': operations, 'merklePrefix': prefix},
+        'channel': jsonMap['channel'] is String ? jsonMap['channel'] : prefix,
+        'data': {'operations': entities, 'merklePrefix': prefix},
         'timestamp': Hlc.fromDate(DateTime.now(), 'server-ws').toString(),
       });
       return;
@@ -434,9 +420,13 @@ class WebSocketHandler {
         targetChannel,
         jsonEncode({
           'originConnectionId': clientInfo.connectionId,
-          'type': type,
+          'type': deletionSnapshot?['type'] ?? _canonicalType(type!, data),
           'data': deletionSnapshot?['data'] ?? data,
-          'timestamp': deletionSnapshot?['timestamp'] ?? timestamp,
+          'timestamp':
+              deletionSnapshot?['timestamp'] ??
+              (isDbOp && data is Map
+                  ? data['lastUpdated'] ?? timestamp
+                  : timestamp),
           'actorId': actorId,
         }),
       );
@@ -471,20 +461,6 @@ class WebSocketHandler {
       'tenant_id': clientInfo.tenantId,
     });
 
-    String? lastResetAt;
-    try {
-      final resetMeta = await crdtService.query(
-        targetChannel,
-        'SELECT last_reset_at FROM project_metadata WHERE tenant_id = ?',
-        [targetChannel],
-      );
-      if (resetMeta.isNotEmpty) {
-        lastResetAt = resetMeta.first['last_reset_at'] as String?;
-      }
-    } catch (e) {
-      JsonLogger.error('BATCH_RESET_CHECK_ERROR', {'error': e.toString()});
-    }
-
     // We must sanitize the operations list for the PubSub broadcast
     final sanitizedOps = <Map<String, dynamic>>[];
 
@@ -502,9 +478,7 @@ class WebSocketHandler {
         void flushBulkTasks() {
           if (bulkTasks.isNotEmpty) {
             // Found a bulk group!
-            // We use the timestamp of the LAST item in the bulk group as the operation timestamp,
-            // or we could use the batchTimestamp. Given side-effects usually share the same timestamp,
-            // using the last one is safe enough for HLC monotonicity.
+            // The bulk reducer preserves each item's original clock.
             final lastTs = bulkTasks.last['timestamp'] as String;
 
             groupedOps.add({
@@ -537,22 +511,6 @@ class WebSocketHandler {
           }
 
           final type = opMap['type'];
-          if (lastResetAt != null &&
-              type != ProtocolConstants.resetData &&
-              type != ProtocolConstants.cursorMove &&
-              type != ProtocolConstants.presenceUpdate &&
-              type != ProtocolConstants.ghostUpdate) {
-            if (innerTimestamp.compareTo(lastResetAt) <= 0) {
-              JsonLogger.warn('BATCH_OP_STALE_REJECTED', {
-                'user': clientInfo.userId,
-                'type': type,
-                'timestamp': innerTimestamp,
-                'lastResetAt': lastResetAt,
-              });
-              continue;
-            }
-          }
-
           final finalOp = Map<String, dynamic>.from(opMap);
           finalOp['timestamp'] = innerTimestamp;
           sanitizedOps.add(
@@ -560,15 +518,14 @@ class WebSocketHandler {
           ); // Still sanitize individually for broadcast
 
           // Grouping Logic
-          if (type == ProtocolConstants.insertTask) {
-            // Add to bulk buffer, keeping the timestamp inside just in case
-            finalOp['data']['timestamp'] =
-                innerTimestamp; // Ensure data has timestamp if needed??
-            // Actually handler uses passed timestamp.
-            // We'll store the whole op wrapper to extract data later
+          if (type == ProtocolConstants.insertTask ||
+              type == ProtocolConstants.updateTask) {
+            finalOp['data']['_taskOperationType'] = type;
+            // Preserve each operation's clock through the SQL batch.
+            finalOp['data']['timestamp'] = innerTimestamp;
             bulkTasks.add(finalOp);
           } else {
-            // Non-insert-task op. Flush any pending bulk buffer first.
+            // Preserve ordering around non-task commands.
             flushBulkTasks();
             groupedOps.add(finalOp);
           }
@@ -612,6 +569,7 @@ class WebSocketHandler {
               if (snapshot == null) {
                 sanitizedOps.remove(op);
               } else {
+                op['type'] = snapshot['type'];
                 op['data'] = snapshot['data'];
                 op['timestamp'] = snapshot['timestamp'];
               }
@@ -630,6 +588,21 @@ class WebSocketHandler {
       });
     }
 
+    var broadcastClock = Hlc.parse(batchTimestamp);
+    for (final operation in sanitizedOps) {
+      if (operation['data'] is Map<String, dynamic>) {
+        final payload = operation['data'] as Map<String, dynamic>;
+        operation['timestamp'] =
+            payload['lastUpdated'] ?? operation['timestamp'];
+        operation['type'] = _canonicalType(
+          operation['type'] as String,
+          payload,
+        );
+      }
+      final clock = Hlc.parse(operation['timestamp'] as String);
+      if (clock > broadcastClock) broadcastClock = clock;
+    }
+
     // Broadcast the SANITIZED operations
     final broadcastData = Map<String, dynamic>.from(data);
     broadcastData['operations'] = sanitizedOps;
@@ -640,7 +613,7 @@ class WebSocketHandler {
         'originConnectionId': clientInfo.connectionId,
         'type': ProtocolConstants.batchUpdate,
         'data': broadcastData,
-        'timestamp': batchTimestamp,
+        'timestamp': broadcastClock.toString(),
         'actorId': actorId,
       }),
     );
@@ -753,5 +726,39 @@ class WebSocketHandler {
 
   void _sendJsonAsProtobuf(dynamic channel, Map<String, dynamic> json) {
     channel.sink.add(ProtobufMapper.toProtobuf(json).writeToBuffer());
+  }
+
+  String _canonicalType(String type, dynamic data) {
+    if (data is! Map) return type;
+    if (const {'INSERT_TASK', 'UPDATE_TASK', 'DELETE_TASK'}.contains(type)) {
+      return data['isDeleted'] == true
+          ? 'DELETE_TASK'
+          : type == 'DELETE_TASK'
+          ? 'UPDATE_TASK'
+          : type;
+    }
+    if (const {
+      'INSERT_RESOURCE',
+      'UPDATE_RESOURCE',
+      'DELETE_RESOURCE',
+    }.contains(type)) {
+      return data['isDeleted'] == true
+          ? 'DELETE_RESOURCE'
+          : type == 'DELETE_RESOURCE'
+          ? 'UPDATE_RESOURCE'
+          : type;
+    }
+    if (const {
+      'INSERT_DEPENDENCY',
+      'UPDATE_DEPENDENCY',
+      'DELETE_DEPENDENCY',
+    }.contains(type)) {
+      return data['type'] == 'DELETE'
+          ? 'DELETE_DEPENDENCY'
+          : type == 'DELETE_DEPENDENCY'
+          ? 'UPDATE_DEPENDENCY'
+          : type;
+    }
+    return type;
   }
 }

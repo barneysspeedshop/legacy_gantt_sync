@@ -1,19 +1,30 @@
 # Coordinated open-source release
 
-## Material UI migration candidates
+## Offline-first synchronization candidates
 
-This is a separate breaking release after the initial MIT/open-source release. The new UI versions are candidates; protocol 3.0.1 stays unchanged.
+This release consolidates the example around canonical local CRDT state and changes merge semantics. Publish only reviewed commits after the checks below pass.
 
 | Package | Candidate | Requirement |
 | --- | --- | --- |
-| `legacy_gantt_protocol` | 3.0.1 (unchanged) | Existing pure-Dart protocol; no republish needed |
-| `legacy_context_menu` | 3.0.0 | Dart 3.13 / Flutter 3.47 or newer; standalone Material UI |
-| `legacy_tree_grid` | 0.15.1 | Dart 3.13 / Flutter 3.47 or newer; standalone Material UI |
-| `legacy_timeline_scrubber` | 4.0.0 | Same Flutter baseline; standalone Material UI |
-| `legacy_gantt_chart` | 10.0.0 | Same Flutter baseline; protocol ^3.0.1 and timeline ^4.0.0 |
-| `legacy_pert_chart` | 0.3.0 | Same Flutter baseline; chart ^10.0.0 and protocol ^3.0.1 |
+| `legacy_gantt_protocol` | 4.0.0 | Task field and presence registers; complete resource writes; canonical minimal resource/dependency tombstones |
+| `legacy_gantt_chart` | 11.0.0 | Protocol ^4.0.0; atomic local state, projection, and outbox; existing Dart 3.13 / Flutter 3.47 baseline |
+| `legacy_pert_chart` | 0.4.0 | Chart ^11.0.0 and protocol ^4.0.0; PERT layout unchanged |
+
+The release gate treats Dart/Flutter informational diagnostics and warnings as failures, and ESLint and Clippy must report zero warnings. Run it against the exact release commits before publication.
+
+Publish **protocol 4.0.0 first**, then rerun standalone chart CI against that hosted version and publish **chart 11.0.0**. Finally rerun PERT CI and publish **PERT 0.4.0**. Existing context menu 3.0.0, tree grid 0.15.1, and timeline 4.0.0 need no new release. Package publication remains an explicit maintainer action.
+
+Upgrade the server and clients together. Resource updates replace complete records, including metadata; clients must send every resource field rather than sparse patches. Resource and dependency deletions retain identity, deletion state, and clock, with canonical default payloads. Task deletions retain historical fields: an older field update can change a hidden tombstone's content/hash without resurrecting it. A reset advances the presence fence; it does not discard historical task fields needed for order-independent reconciliation.
+
+The example renders accepted local commits immediately. Its canonical entities, display projections, and outgoing operations commit in one SQLite transaction; remote replay uses the same merge path. Automatic previews remain local until explicit editing or reseeding. Pending outgoing edits prevent switching tenant scope. The outbox survives restarts. Socket handoff is not a durable server acknowledgement; bidirectional canonical reconciliation recovers lost handoffs on a later successful connection using original clocks. Causal checksums include field clocks and the reset fence, and recovery waits for correlated responses.
+
+Before deployment, run the real PostgreSQL/Redis integration tests, including two independent persistent clients, cold replay, delete/reset ordering, matching Merkle roots, server restart after writes, and a lost socket handoff repaired by reopening the persistent client. The server also repairs legacy task `modified` timestamps into valid CRDT clocks before opening the CRDT database; verify that migration against disposable legacy data.
 
 The server and Config App retain their own application versions. The plugin remains a prototype; its JSON sync client is not compatible with the production binary transport.
+
+## Previous Material UI migration
+
+The existing Material release introduced chart 10, PERT 0.3, context menu 3, tree grid 0.15.1, and timeline 4 with protocol 3.0.1. Its UI migration remains required when upgrading from older clients.
 
 ### Application migration
 
@@ -21,11 +32,11 @@ Add `material_ui` to applications that use Material design and replace `package:
 
 Keep existing installations on chart 9.x if they need the previous Flutter baseline. This migration is not a 9.0.x patch. The pure-Dart protocol, CRDT clocks, and server wire format remain unchanged.
 
-Publish **context menu 3.0.0, tree grid 0.15.1, and timeline 4.0.0 first**, then verify and publish **chart 10.0.0**, then verify and publish **PERT 0.3.0**. Chart and tree examples also resolve context menu; publish it before rerunning their standalone CI. Recheck standalone CI against hosted dependencies after each prerequisite is available; monorepo path overrides are only for candidate validation. Package publication is an explicit maintainer action.
+The previous publication order was context menu, tree grid, timeline, chart, then PERT. Follow the current candidate order above for this release.
 
 ## Migration
 
-The preceding open-source release used protocol 3.0.1, timeline 3.0.0, chart 9.0.0, and PERT 0.2.0. Protocol 3.0.1 corrected equal-clock tombstone handling found after 3.0.0 was published; the next release retains that minimum.
+The preceding open-source release used protocol 3.0.1, timeline 3.0.0, chart 9.0.0, and PERT 0.2.0. Protocol 3.0.1 corrected equal-clock tombstone handling found after 3.0.0 was published; the Material release retained that minimum; the current candidates require protocol 4.
 
 Upgrade production clients and server together: there is no JSON-text fallback on the production WebSocket endpoint. Use `ProtocolMessage` binary frames and `ProtobufMapper` for logical operation maps. The Go mock server still uses JSON and is not a production compatibility target.
 
@@ -54,7 +65,7 @@ All seven submodules are public, so recursive checkout uses the default read-onl
 
 The gate also checks Rust formatting and Clippy, the Go mock server's build/vet/formatting, package example analysis, plugin host lint and behavior tests, plugin webview startup and build. The Go mock has no automated tests. Tree grid and timeline examples have no test suites; their package tests and example analysis provide coverage.
 
-Before the candidate versions reach pub.dev, run `python3 scripts/prepare_local_packages.py`. It writes ignored local overrides for the monorepo examples and dependent packages and refuses to overwrite conflicting user configuration. It runs automatically in the release gate. Independently cloned package repositories resolve published dependencies, so publish the new context menu, tree grid, and timeline scrubber → chart → PERT versions in order before relying on their standalone CI workflows. The protocol package is unchanged.
+Before the candidate versions reach pub.dev, run `python3 scripts/prepare_local_packages.py`. It writes ignored local overrides for the monorepo examples and dependent packages and refuses to overwrite conflicting user configuration. It runs automatically in the release gate. Independently cloned package repositories resolve published dependencies, so publish protocol → chart → PERT in order and rerun each downstream standalone CI workflow against hosted prerequisites.
 
 ## Fresh-checkout rehearsal
 

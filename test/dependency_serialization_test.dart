@@ -97,6 +97,17 @@ void main() {
         expect(task.notes, 'Keep after deletion');
         expect(task.isMilestone, isTrue);
         expect(task.isDeleted, deleted);
+        final reduced = CRDTEngine().mergeTasks([], [
+          Operation(
+            type: deleted ? 'DELETE_TASK' : 'UPDATE_TASK',
+            data: ProtobufMapper.taskToJson(task),
+            timestamp: Hlc.parse(timestamp),
+            actorId: 'server-sync',
+          ),
+        ]).single;
+        expect(reduced.name, 'Milestone');
+        expect(reduced.notes, 'Keep after deletion');
+        expect(reduced.contentHash, task.contentHash);
         final metadata = jsonDecode(task.metadataJson) as Map<String, dynamic>;
         expect(metadata['textColor'], 'ffffffff');
         expect(metadata['color'], 'ff0000ff');
@@ -146,7 +157,7 @@ void main() {
       expect(dependency.predecessorTaskId, 'p1');
       expect(dependency.successorTaskId, 's1');
       expect(dependency.type, deleted ? 'DELETE' : 'contained');
-      expect(dependency.lag.toInt(), 4500);
+      expect(dependency.lag.toInt(), deleted ? 0 : 4500);
       final serverTree = MerkleService.buildTreeFromRows(
         tasks: [],
         dependencies: [row],
@@ -188,13 +199,17 @@ void main() {
         message.writeToBuffer(),
       ).batchUpdate.resources.single;
       expect(resource.id, 'resource-1');
-      expect(resource.name, 'Equipment');
-      expect(resource.parentId, 'group-1');
-      expect(resource.type, 'tool');
+      expect(resource.name, deleted ? '' : 'Equipment');
+      expect(resource.parentId, deleted ? '' : 'group-1');
+      expect(resource.type, deleted ? 'person' : 'tool');
       expect(resource.isDeleted, deleted);
-      expect(resource.metadataJson, contains('"isExpanded":false'));
-      expect(jsonDecode(resource.metadataJson)['category'], 'equipment');
-      expect(jsonDecode(resource.metadataJson)['custom'], {'rate': 3});
+      if (deleted) {
+        expect(jsonDecode(resource.metadataJson), isEmpty);
+      } else {
+        expect(resource.metadataJson, contains('"isExpanded":false'));
+        expect(jsonDecode(resource.metadataJson)['category'], 'equipment');
+        expect(jsonDecode(resource.metadataJson)['custom'], {'rate': 3});
+      }
       final serverTree = MerkleService.buildTreeFromRows(
         tasks: [],
         dependencies: [],

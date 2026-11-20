@@ -8,7 +8,7 @@ This monorepo is organized into the following key components:
 
 ### Flutter Packages
 
-The next breaking UI release uses standalone `material_ui`, Dart 3.13+, and Flutter 3.47+. See the [release and migration guide](docs/internal/RELEASE.md) for candidate versions and publication order. The pure-Dart protocol and server transport are unchanged.
+The next synchronization release requires protocol 4.0.0, chart 11.0.0, and a coordinated server update while preserving offline-first local editing. It retains standalone `material_ui`, Dart 3.13+, and Flutter 3.47+. See the [release and migration guide](docs/internal/RELEASE.md) for merge semantics, candidate versions, and publication order.
 
 - **[`legacy_gantt_chart`](legacy_gantt_chart/)**: The core Flutter widget for displaying interactive Gantt charts. Supports drag-and-drop, resizing, dynamic data loading, and CRDT-based synchronization.
 - **[`legacy_context_menu`](legacy_context_menu/)**: Nested and collapsible context menus used by the chart and tree examples, migrated to standalone Material UI.

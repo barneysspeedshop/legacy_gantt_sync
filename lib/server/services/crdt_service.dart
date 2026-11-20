@@ -4,6 +4,9 @@ import 'dart:io';
 
 import 'package:legacy_gantt_protocol/legacy_gantt_protocol.dart';
 import 'package:postgres_crdt/postgres_crdt.dart' hide Hlc;
+import 'package:postgres/postgres.dart' as pg;
+
+import 'legacy_modified_clock_repair.dart';
 import 'package:legacy_gantt_sync/utils/logger.dart';
 import 'package:legacy_gantt_sync/utils/retry_utils.dart';
 
@@ -15,29 +18,75 @@ class CrdtService {
     if (_crdt != null) return;
 
     try {
-      _crdt = await retryForever(
-        () => PostgresCrdt.open(
-          Platform.environment['DB_NAME'] ?? 'legacy_gantt',
-          host: Platform.environment['DB_HOST'] ?? 'localhost',
-          port: int.parse(Platform.environment['DB_PORT'] ?? '5432'),
-          username:
-              Platform.environment['DB_USER'] ??
-              (throw ArgumentError('DB_USER is required')),
-          password:
-              Platform.environment['DB_PASS'] ??
-              (throw ArgumentError('DB_PASS is required')),
-          sslMode: _getSslMode(),
-        ),
-        description: 'Connect to Main DB',
-      );
-
-      await _initTables(_crdt!);
+      _crdt = await _openInitializedCrdt(description: 'Connect to Main DB');
 
       _initCompleter.complete(_crdt);
       JsonLogger.info('DB_INIT_SUCCESS', {});
     } catch (e) {
       JsonLogger.error('DB_INIT_FAIL', {'error': e.toString()});
       _initCompleter.completeError(e);
+      rethrow;
+    }
+  }
+
+  Future<PostgresCrdt> _openInitializedCrdt({
+    required String description,
+    int? maxRetries,
+  }) async {
+    final opened = await retryForever(
+      _openWithSchemaLock,
+      description: description,
+      maxRetries: maxRetries,
+    );
+    try {
+      await _initTables(opened.crdt);
+      return opened.crdt;
+    } finally {
+      // This dedicated session owns the database-scoped advisory lock. Closing
+      // it releases the lock without reserving a CRDT pool connection.
+      await opened.guard.close();
+    }
+  }
+
+  Future<({pg.Connection guard, PostgresCrdt crdt})>
+  _openWithSchemaLock() async {
+    final connection = await pg.Connection.open(
+      pg.Endpoint(
+        host: Platform.environment['DB_HOST'] ?? 'localhost',
+        port: int.parse(Platform.environment['DB_PORT'] ?? '5432'),
+        database: Platform.environment['DB_NAME'] ?? 'legacy_gantt',
+        username:
+            Platform.environment['DB_USER'] ??
+            (throw ArgumentError('DB_USER is required')),
+        password:
+            Platform.environment['DB_PASS'] ??
+            (throw ArgumentError('DB_PASS is required')),
+      ),
+      settings: pg.ConnectionSettings(sslMode: _getSslMode()),
+    );
+    try {
+      await connection.execute(
+        "SELECT pg_advisory_lock(hashtext('legacy_gantt_sync'), hashtext('schema_init'))",
+      );
+      final repaired = await repairLegacyModifiedClocks(connection);
+      if (repaired > 0) {
+        JsonLogger.info('LEGACY_MODIFIED_CLOCKS_REPAIRED', {'count': repaired});
+      }
+      final crdt = await PostgresCrdt.open(
+        Platform.environment['DB_NAME'] ?? 'legacy_gantt',
+        host: Platform.environment['DB_HOST'] ?? 'localhost',
+        port: int.parse(Platform.environment['DB_PORT'] ?? '5432'),
+        username:
+            Platform.environment['DB_USER'] ??
+            (throw ArgumentError('DB_USER is required')),
+        password:
+            Platform.environment['DB_PASS'] ??
+            (throw ArgumentError('DB_PASS is required')),
+        sslMode: _getSslMode(),
+      );
+      return (guard: connection, crdt: crdt);
+    } catch (_) {
+      await connection.close();
       rethrow;
     }
   }
@@ -66,12 +115,16 @@ class CrdtService {
         propagates_move_to_children BOOLEAN DEFAULT TRUE,
         resize_policy TEXT DEFAULT 'none',
         metadata_json TEXT,
+        field_timestamps TEXT,
         PRIMARY KEY (tenant_id, id)
       )
     ''');
 
     await crdt.execute(
       'ALTER TABLE tasks ADD COLUMN IF NOT EXISTS metadata_json TEXT',
+    );
+    await crdt.execute(
+      'ALTER TABLE tasks ADD COLUMN IF NOT EXISTS field_timestamps TEXT',
     );
 
     try {
@@ -219,18 +272,7 @@ class CrdtService {
         _crdt = null; // Clear bad instance
 
         try {
-          _crdt = await retryForever(
-            () => PostgresCrdt.open(
-              Platform.environment['DB_NAME'] ?? 'legacy_gantt',
-              host: Platform.environment['DB_HOST'] ?? 'localhost',
-              username:
-                  Platform.environment['DB_USER'] ??
-                  (throw ArgumentError('DB_USER is required')),
-              password:
-                  Platform.environment['DB_PASS'] ??
-                  (throw ArgumentError('DB_PASS is required')),
-              sslMode: _getSslMode(),
-            ),
+          _crdt = await _openInitializedCrdt(
             description: 'Reconnect to Main DB',
             maxRetries: 3,
           );
@@ -407,16 +449,20 @@ class CrdtService {
       'isDeleted': isDeleted,
       'rowId': row['row_id']?.toString(),
       'metadataJson': jsonEncode(
-        MerkleHashNormalizer.normalizeTaskMetadata({
+        MerkleHashNormalizer.completeTaskMetadata({
           ...metadata,
-          'color': row['color'],
-          'textColor': row['text_color'],
+          'color': MerkleHashNormalizer.normalizeColorHex(row['color']),
+          'textColor': MerkleHashNormalizer.normalizeColorHex(
+            row['text_color'],
+          ),
           'originalId': metadata['originalId'],
           'usesWorkCalendar': _toBool(row['uses_work_calendar']),
           'propagatesMoveToChildren':
               row['propagates_move_to_children'] == null ||
               _toBool(row['propagates_move_to_children']),
-          'resizePolicy': row['resize_policy'],
+          'resizePolicy': MerkleHashNormalizer.normalizeResizePolicy(
+            row['resize_policy'],
+          ),
           'baselineStart': MerkleHashNormalizer.formatProtocolDateOrNull(
             row['baseline_start'],
           ),
@@ -437,6 +483,18 @@ class CrdtService {
     };
 
     cleanData['lastUpdated'] = lastUpdated;
+    final fieldTimestamps = row['field_timestamps'];
+    final storedClocks = fieldTimestamps is String && fieldTimestamps.isNotEmpty
+        ? jsonDecode(fieldTimestamps) as Map<String, dynamic>
+        : <String, dynamic>{};
+    cleanData['fieldTimestamps'] =
+        MerkleHashNormalizer.normalizeTaskFieldTimestamps(
+          fieldTimestamps: storedClocks.map(
+            (key, value) => MapEntry(key, value as String),
+          ),
+          lastUpdated: lastUpdated,
+          metadata: ProtobufMapper.metadataFromJson(cleanData),
+        );
 
     return envelope;
   }
@@ -447,8 +505,10 @@ class CrdtService {
     final cleanData = {
       'predecessorTaskId': record['predecessor_task_id']?.toString(),
       'successorTaskId': record['successor_task_id']?.toString(),
-      'type': record['dependency_type'],
-      'lag': record['lag'] == null ? 0 : int.parse(record['lag'].toString()),
+      'type': isDeleted ? 'DELETE' : record['dependency_type'],
+      'lag': isDeleted || record['lag'] == null
+          ? 0
+          : int.parse(record['lag'].toString()),
     };
 
     if (cleanData['predecessorTaskId'] == null ||
@@ -489,6 +549,16 @@ class CrdtService {
         }, type: record['gantt_type']?.toString() ?? 'person'),
       ),
     };
+
+    if (isDeleted) {
+      cleanData.remove('isExpanded');
+      cleanData.addAll({
+        'name': '',
+        'parentId': '',
+        'type': 'person',
+        'metadataJson': '{}',
+      });
+    }
 
     final lastUpdated = recordTimestamp(record);
     cleanData['lastUpdated'] = lastUpdated;

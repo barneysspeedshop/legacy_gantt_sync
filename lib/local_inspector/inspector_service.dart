@@ -1,3 +1,4 @@
+import 'package:legacy_gantt_sync/server/services/merkle_service.dart';
 import 'dart:convert';
 
 import 'package:legacy_gantt_sync/server/services/crdt_service.dart';
@@ -564,6 +565,7 @@ class InspectorDatabase {
           'tasks': await load('tasks'),
           'dependencies': await load('dependencies'),
           'resources': await load('resources'),
+          'metadata': await load('project_metadata'),
         };
       },
     );
@@ -576,6 +578,19 @@ class InspectorDatabase {
     final rows = await tenantMerkleRows(tenantId);
     final formatter = CrdtService();
     final entities = <Map<String, dynamic>>[];
+    final reset = MerkleService.resetTimestampFromRows(rows['metadata'] ?? []);
+    if (reset != null &&
+        MerkleHashNormalizer.merkleMinutePrefix(reset.toString()) == prefix) {
+      entities.add({
+        'table': 'project_metadata',
+        'operation': {
+          'type': 'RESET_DATA',
+          'data': <String, dynamic>{},
+          'timestamp': reset.toString(),
+          'actorId': 'server-sync',
+        },
+      });
+    }
     for (final row in rows['tasks']!) {
       if (_prefix(row) == prefix) {
         entities.add({
@@ -604,7 +619,7 @@ class InspectorDatabase {
   }
 
   static String _prefix(Map<String, dynamic> row) =>
-      MerkleHashNormalizer.merkleMinutePrefix(row['last_updated']?.toString());
+      MerkleHashNormalizer.merkleMinutePrefix(CrdtService.recordTimestamp(row));
 
   Future<_RowCounts> _countRows(
     InspectorTableDefinition definition,
