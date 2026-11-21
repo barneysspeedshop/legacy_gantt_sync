@@ -12,9 +12,6 @@ done
 python3 scripts/check_toolchains.py
 bash scripts/build_proto.sh --check
 python3 scripts/test_start_infra.py
-for package in legacy_gantt_protocol legacy_context_menu legacy_gantt_chart legacy_pert_chart legacy_tree_grid legacy_timeline_scrubber; do
-  (cd "$package" && dart format --output=none --set-exit-if-changed lib)
-done
 python3 scripts/prepare_local_packages.py
 python3 scripts/audit_open_source.py
 python3 scripts/check_state_ownership.py
@@ -24,7 +21,7 @@ export CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-2}"
 (cd gantt_solver_rs && cargo fmt --check && cargo clippy --all-targets --locked -- -D warnings && cargo test --locked && cargo build --release --locked)
 export LD_LIBRARY_PATH="$PWD/gantt_solver_rs/target/release${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
-(cd legacy_gantt_protocol && dart pub get && dart analyze --fatal-infos && dart test && dart pub publish --dry-run)
+(cd legacy_gantt_protocol && dart pub get && dart format --output=none --set-exit-if-changed lib && dart analyze --fatal-infos && dart test && dart pub publish --dry-run)
 (cd legacy_gantt_protocol/reference_server_go && go test ./... && go vet ./... && test -z "$(gofmt -l .)")
 dart pub get --enforce-lockfile
 dart analyze --fatal-infos bin lib test
@@ -33,7 +30,15 @@ dart compile exe bin/server.dart -o build/release-server
 dart test --concurrency=1
 
 for package in config legacy_context_menu legacy_gantt_chart legacy_pert_chart legacy_tree_grid legacy_timeline_scrubber; do
-  (cd "$package" && flutter pub get && flutter analyze --fatal-infos --fatal-warnings && flutter test)
+  (
+    cd "$package"
+    flutter pub get
+    if [[ "$package" != config ]]; then
+      dart format --output=none --set-exit-if-changed lib
+    fi
+    flutter analyze --fatal-infos --fatal-warnings
+    flutter test
+  )
 done
 for example in legacy_context_menu/example legacy_gantt_chart/example legacy_pert_chart/example legacy_tree_grid/example legacy_timeline_scrubber/example; do
   (cd "$example" && flutter pub get && flutter analyze --fatal-infos --fatal-warnings)
