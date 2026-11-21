@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Scan publishable files and optionally every local Git ref without printing secrets.
+"""Scan tracked publishable files and optionally every local Git ref without printing secrets.
 
 Requires Gitleaks v8 on PATH (or --gitleaks /path/to/gitleaks).
-Ignored operator files are excluded; tracked files are always scanned.
+Only index-tracked files are scanned; add new source files to the index before
+running this check. Working-tree content for tracked files is scanned.
 """
 import argparse
 import json
@@ -42,7 +43,7 @@ def main():
             temp = Path(temp)
             snapshot = temp / 'publishable'
             snapshot.mkdir()
-            names = git(repo, 'ls-files', '--cached', '--others', '--exclude-standard', '-z')
+            names = git(repo, 'ls-files', '--cached', '-z')
             for raw in set(names.split(b'\0')):
                 if not raw:
                     continue

@@ -29,7 +29,7 @@ python3 scripts/audit_open_source.py
 python3 scripts/audit_open_source.py --history
 ```
 
-The script discovers initialized submodules from Git's index, scans tracked and non-ignored untracked files, and optionally scans every local ref. It prints only file locations, rule identifiers, and commit IDs. It exits nonzero for findings or scanner failures. After the intentional history rewrite, the public server refs should scan clean; local recovery backups still contain the former key and must remain private.
+The script discovers initialized submodules from Git's index, scans tracked working-tree files, and optionally scans every local ref. Untracked files are excluded, even when they are not ignored; add intended source files to Git before auditing. Tracked files remain included even if an ignore rule matches them. It prints only file locations, rule identifiers, and commit IDs. It exits nonzero for findings or scanner failures. After the intentional history rewrite, the public server refs should scan clean; local recovery backups still contain the former key and must remain private.
 
 ## Repository contribution controls
 

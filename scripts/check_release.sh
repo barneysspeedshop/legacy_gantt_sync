@@ -12,6 +12,7 @@ done
 python3 scripts/check_toolchains.py
 bash scripts/build_proto.sh --check
 python3 scripts/test_start_infra.py
+python3 scripts/test_release_file_scope.py
 python3 scripts/prepare_local_packages.py
 python3 scripts/audit_open_source.py
 python3 scripts/check_state_ownership.py
