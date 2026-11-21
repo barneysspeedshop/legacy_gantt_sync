@@ -1,0 +1,1146 @@
+{
+  "checked_at": "2026-11-21T17:13:27.505822+00:00",
+  "toolchains": {
+    "flutter": {
+      "hash": "ae9b586f34a8443573f82ef57c3bf914a908cbf7",
+      "channel": "stable",
+      "version": "3.50.1",
+      "dart_sdk_version": "3.14.0",
+      "dart_sdk_arch": "x64",
+      "release_date": "2026-11-20T00:24:27.186534Z",
+      "archive": "stable/linux/flutter_linux_3.50.1-stable.tar.xz",
+      "sha256": "4ad17fc8462fbcef2ba19ff4a78c0a16b7147fde1add8578e267ea62cdb92678"
+    },
+    "dart": {
+      "date": "2026-11-17",
+      "version": "3.14.1",
+      "revision": "c8a0db5978a68d4037f7e5294ffc79867935c8c2"
+    },
+    "go": "go1.27.4",
+    "node": "v26.13.1",
+    "rust": "1.100.0"
+  },
+  "pub": [
+    {
+      "scope": "config",
+      "package": "material_ui",
+      "constraint": "^1.11.1",
+      "resolved": "1.11.1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.11.1"
+    },
+    {
+      "scope": "config",
+      "package": "cupertino_icons",
+      "constraint": "^2.0.0",
+      "resolved": "2.0.0",
+      "source": "hosted",
+      "dev": false,
+      "latest": "2.0.0"
+    },
+    {
+      "scope": "config",
+      "package": "http",
+      "constraint": "^1.6.0",
+      "resolved": "1.6.0",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.6.0"
+    },
+    {
+      "scope": "config",
+      "package": "shared_preferences",
+      "constraint": "^2.5.6",
+      "resolved": "2.5.6",
+      "source": "hosted",
+      "dev": false,
+      "latest": "2.5.6"
+    },
+    {
+      "scope": "config",
+      "package": "web_socket_channel",
+      "constraint": "^3.0.3",
+      "resolved": "3.0.3",
+      "source": "hosted",
+      "dev": false,
+      "latest": "3.0.3"
+    },
+    {
+      "scope": "config",
+      "package": "uuid",
+      "constraint": "^4.6.0",
+      "resolved": "4.6.0",
+      "source": "hosted",
+      "dev": false,
+      "latest": "4.6.0"
+    },
+    {
+      "scope": "config",
+      "package": "flutter_lints",
+      "constraint": "^6.0.0",
+      "resolved": "6.0.0",
+      "source": "hosted",
+      "dev": true,
+      "latest": "6.0.0"
+    },
+    {
+      "scope": "integration_tests/canonical_sync",
+      "package": "async",
+      "constraint": "^2.13.1",
+      "resolved": "2.13.1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "2.13.1"
+    },
+    {
+      "scope": "integration_tests/canonical_sync",
+      "package": "http",
+      "constraint": "^1.6.0",
+      "resolved": "1.6.0",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.6.0"
+    },
+    {
+      "scope": "integration_tests/canonical_sync",
+      "package": "sqlite_crdt",
+      "constraint": "^3.0.4",
+      "resolved": "3.0.4",
+      "source": "hosted",
+      "dev": false,
+      "latest": "3.0.4"
+    },
+    {
+      "scope": "integration_tests/canonical_sync",
+      "package": "sqflite_common_ffi",
+      "constraint": "^2.4.7",
+      "resolved": "2.4.7",
+      "source": "hosted",
+      "dev": false,
+      "latest": "2.4.7"
+    },
+    {
+      "scope": "integration_tests/canonical_sync",
+      "package": "web_socket_channel",
+      "constraint": "^3.0.3",
+      "resolved": "3.0.3",
+      "source": "hosted",
+      "dev": false,
+      "latest": "3.0.3"
+    },
+    {
+      "scope": "integration_tests/canonical_sync",
+      "package": "lints",
+      "constraint": "^6.1.0",
+      "resolved": "6.1.0",
+      "source": "hosted",
+      "dev": true,
+      "latest": "6.1.0"
+    },
+    {
+      "scope": ".",
+      "package": "async",
+      "constraint": "^2.13.1",
+      "resolved": "2.13.1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "2.13.1"
+    },
+    {
+      "scope": ".",
+      "package": "bcrypt",
+      "constraint": "^1.2.0",
+      "resolved": "1.2.0",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.2.0"
+    },
+    {
+      "scope": ".",
+      "package": "dart_jsonwebtoken",
+      "constraint": "^3.4.1",
+      "resolved": "3.4.1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "3.4.1"
+    },
+    {
+      "scope": ".",
+      "package": "postgres",
+      "constraint": "^3.6.0",
+      "resolved": "3.6.0",
+      "source": "hosted",
+      "dev": false,
+      "latest": "3.6.0"
+    },
+    {
+      "scope": ".",
+      "package": "postgres_crdt",
+      "constraint": "^3.0.3",
+      "resolved": "3.0.3",
+      "source": "hosted",
+      "dev": false,
+      "latest": "3.0.3"
+    },
+    {
+      "scope": ".",
+      "package": "shelf",
+      "constraint": "^1.4.3",
+      "resolved": "1.4.3",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.4.3"
+    },
+    {
+      "scope": ".",
+      "package": "shelf_router",
+      "constraint": "^1.1.5",
+      "resolved": "1.1.5",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.1.5"
+    },
+    {
+      "scope": ".",
+      "package": "shelf_web_socket",
+      "constraint": "^3.0.0",
+      "resolved": "3.0.0",
+      "source": "hosted",
+      "dev": false,
+      "latest": "3.0.0"
+    },
+    {
+      "scope": ".",
+      "package": "sql_crdt",
+      "constraint": "^3.0.3",
+      "resolved": "3.0.3",
+      "source": "hosted",
+      "dev": false,
+      "latest": "3.0.3"
+    },
+    {
+      "scope": ".",
+      "package": "web_socket_channel",
+      "constraint": "^3.0.3",
+      "resolved": "3.0.3",
+      "source": "hosted",
+      "dev": false,
+      "latest": "3.0.3"
+    },
+    {
+      "scope": ".",
+      "package": "http",
+      "constraint": "^1.6.0",
+      "resolved": "1.6.0",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.6.0"
+    },
+    {
+      "scope": ".",
+      "package": "redis",
+      "constraint": "^4.1.0",
+      "resolved": "4.1.0",
+      "source": "hosted",
+      "dev": false,
+      "latest": "4.1.0"
+    },
+    {
+      "scope": ".",
+      "package": "uuid",
+      "constraint": "^4.6.0",
+      "resolved": "4.6.0",
+      "source": "hosted",
+      "dev": false,
+      "latest": "4.6.0"
+    },
+    {
+      "scope": ".",
+      "package": "crypto",
+      "constraint": "^3.0.8",
+      "resolved": "3.0.8",
+      "source": "hosted",
+      "dev": false,
+      "latest": "3.0.8"
+    },
+    {
+      "scope": ".",
+      "package": "ffi",
+      "constraint": "^2.2.0",
+      "resolved": "2.2.0",
+      "source": "hosted",
+      "dev": false,
+      "latest": "2.2.0"
+    },
+    {
+      "scope": ".",
+      "package": "fixnum",
+      "constraint": "^1.1.1",
+      "resolved": "1.1.1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.1.1"
+    },
+    {
+      "scope": ".",
+      "package": "lints",
+      "constraint": "^6.1.0",
+      "resolved": "6.1.0",
+      "source": "hosted",
+      "dev": true,
+      "latest": "6.1.0"
+    },
+    {
+      "scope": ".",
+      "package": "mocktail",
+      "constraint": "^1.0.5",
+      "resolved": "1.0.5",
+      "source": "hosted",
+      "dev": true,
+      "latest": "1.0.5"
+    },
+    {
+      "scope": ".",
+      "package": "test",
+      "constraint": "^1.33.0",
+      "resolved": "1.33.0",
+      "source": "hosted",
+      "dev": true,
+      "latest": "1.33.0"
+    },
+    {
+      "scope": "legacy_context_menu/example",
+      "package": "material_ui",
+      "constraint": "^1.11.1",
+      "resolved": "1.11.1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.11.1"
+    },
+    {
+      "scope": "legacy_context_menu/example",
+      "package": "flutter_lints",
+      "constraint": "^6.0.0",
+      "resolved": "6.0.0",
+      "source": "hosted",
+      "dev": true,
+      "latest": "6.0.0"
+    },
+    {
+      "scope": "legacy_context_menu",
+      "package": "material_ui",
+      "constraint": "^1.11.1",
+      "resolved": "1.11.1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.11.1"
+    },
+    {
+      "scope": "legacy_context_menu",
+      "package": "flutter_lints",
+      "constraint": "^6.0.0",
+      "resolved": "6.0.0",
+      "source": "hosted",
+      "dev": true,
+      "latest": "6.0.0"
+    },
+    {
+      "scope": "legacy_gantt_chart/example",
+      "package": "collection",
+      "constraint": "^1.19.1",
+      "resolved": "1.19.1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.19.1"
+    },
+    {
+      "scope": "legacy_gantt_chart/example",
+      "package": "csv",
+      "constraint": "^8.0.0",
+      "resolved": "8.0.0",
+      "source": "hosted",
+      "dev": false,
+      "latest": "8.0.0"
+    },
+    {
+      "scope": "legacy_gantt_chart/example",
+      "package": "material_ui",
+      "constraint": "^1.11.1",
+      "resolved": "1.11.1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.11.1"
+    },
+    {
+      "scope": "legacy_gantt_chart/example",
+      "package": "file_selector",
+      "constraint": "^1.1.0",
+      "resolved": "1.1.0",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.1.0"
+    },
+    {
+      "scope": "legacy_gantt_chart/example",
+      "package": "google_generative_ai",
+      "constraint": "^0.4.7",
+      "resolved": "0.4.7",
+      "source": "hosted",
+      "dev": false,
+      "latest": "0.4.7"
+    },
+    {
+      "scope": "legacy_gantt_chart/example",
+      "package": "http",
+      "constraint": "^1.6.0",
+      "resolved": "1.6.0",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.6.0"
+    },
+    {
+      "scope": "legacy_gantt_chart/example",
+      "package": "intl",
+      "constraint": "^0.20.3",
+      "resolved": "0.20.3",
+      "source": "hosted",
+      "dev": false,
+      "latest": "0.20.3"
+    },
+    {
+      "scope": "legacy_gantt_chart/example",
+      "package": "legacy_context_menu",
+      "constraint": "^3.0.0",
+      "resolved": "3.0.0",
+      "source": "path",
+      "dev": false,
+      "latest": "3.0.0"
+    },
+    {
+      "scope": "legacy_gantt_chart/example",
+      "package": "legacy_gantt_protocol",
+      "constraint": "^4.0.0",
+      "resolved": "4.0.1",
+      "source": "path",
+      "dev": false,
+      "latest": "4.0.0"
+    },
+    {
+      "scope": "legacy_gantt_chart/example",
+      "package": "legacy_timeline_scrubber",
+      "constraint": "^4.0.0",
+      "resolved": "4.0.0",
+      "source": "path",
+      "dev": false,
+      "latest": "4.0.0"
+    },
+    {
+      "scope": "legacy_gantt_chart/example",
+      "package": "legacy_tree_grid",
+      "constraint": "^0.15.0",
+      "resolved": "0.15.1",
+      "source": "path",
+      "dev": false,
+      "latest": "0.15.1"
+    },
+    {
+      "scope": "legacy_gantt_chart/example",
+      "package": "path",
+      "constraint": "^1.9.1",
+      "resolved": "1.9.1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.9.1"
+    },
+    {
+      "scope": "legacy_gantt_chart/example",
+      "package": "path_provider",
+      "constraint": "^2.1.6",
+      "resolved": "2.1.6",
+      "source": "hosted",
+      "dev": false,
+      "latest": "2.1.6"
+    },
+    {
+      "scope": "legacy_gantt_chart/example",
+      "package": "provider",
+      "constraint": "^6.1.5+1",
+      "resolved": "6.1.5+1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "6.1.5+1"
+    },
+    {
+      "scope": "legacy_gantt_chart/example",
+      "package": "sqflite_common_ffi",
+      "constraint": "^2.4.7",
+      "resolved": "2.4.7",
+      "source": "hosted",
+      "dev": false,
+      "latest": "2.4.7"
+    },
+    {
+      "scope": "legacy_gantt_chart/example",
+      "package": "sqflite_common_ffi_web",
+      "constraint": "^1.2.2",
+      "resolved": "1.2.2",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.2.2"
+    },
+    {
+      "scope": "legacy_gantt_chart/example",
+      "package": "sqlite_crdt",
+      "constraint": "^3.0.4",
+      "resolved": "3.0.4",
+      "source": "hosted",
+      "dev": false,
+      "latest": "3.0.4"
+    },
+    {
+      "scope": "legacy_gantt_chart/example",
+      "package": "synchronized",
+      "constraint": "^3.6.1+1",
+      "resolved": "3.6.1+1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "3.6.1+1"
+    },
+    {
+      "scope": "legacy_gantt_chart/example",
+      "package": "uuid",
+      "constraint": "^4.6.0",
+      "resolved": "4.6.0",
+      "source": "hosted",
+      "dev": false,
+      "latest": "4.6.0"
+    },
+    {
+      "scope": "legacy_gantt_chart/example",
+      "package": "web_socket_channel",
+      "constraint": "^3.0.3",
+      "resolved": "3.0.3",
+      "source": "hosted",
+      "dev": false,
+      "latest": "3.0.3"
+    },
+    {
+      "scope": "legacy_gantt_chart/example",
+      "package": "flutter_lints",
+      "constraint": "^6.0.0",
+      "resolved": "6.0.0",
+      "source": "hosted",
+      "dev": true,
+      "latest": "6.0.0"
+    },
+    {
+      "scope": "legacy_gantt_chart/example",
+      "package": "stream_channel",
+      "constraint": "^2.1.4",
+      "resolved": "2.1.4",
+      "source": "hosted",
+      "dev": true,
+      "latest": "2.1.4"
+    },
+    {
+      "scope": "legacy_gantt_chart/example",
+      "package": "mocktail",
+      "constraint": "^1.0.5",
+      "resolved": "1.0.5",
+      "source": "hosted",
+      "dev": true,
+      "latest": "1.0.5"
+    },
+    {
+      "scope": "legacy_gantt_chart",
+      "package": "material_ui",
+      "constraint": "^1.11.1",
+      "resolved": "1.11.1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.11.1"
+    },
+    {
+      "scope": "legacy_gantt_chart",
+      "package": "intl",
+      "constraint": "^0.20.3",
+      "resolved": "0.20.3",
+      "source": "hosted",
+      "dev": false,
+      "latest": "0.20.3"
+    },
+    {
+      "scope": "legacy_gantt_chart",
+      "package": "provider",
+      "constraint": "^6.1.5+1",
+      "resolved": "6.1.5+1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "6.1.5+1"
+    },
+    {
+      "scope": "legacy_gantt_chart",
+      "package": "legacy_gantt_protocol",
+      "constraint": "^4.0.0",
+      "resolved": "4.0.0",
+      "source": "path",
+      "dev": false,
+      "latest": "4.0.0"
+    },
+    {
+      "scope": "legacy_gantt_chart",
+      "package": "legacy_timeline_scrubber",
+      "constraint": "^4.0.0",
+      "resolved": "4.0.0",
+      "source": "path",
+      "dev": false,
+      "latest": "4.0.0"
+    },
+    {
+      "scope": "legacy_gantt_chart",
+      "package": "sqlite_crdt",
+      "constraint": "^3.0.4",
+      "resolved": "3.0.4",
+      "source": "hosted",
+      "dev": false,
+      "latest": "3.0.4"
+    },
+    {
+      "scope": "legacy_gantt_chart",
+      "package": "shelf",
+      "constraint": "^1.4.3",
+      "resolved": "1.4.3",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.4.3"
+    },
+    {
+      "scope": "legacy_gantt_chart",
+      "package": "shelf_router",
+      "constraint": "^1.1.5",
+      "resolved": "1.1.5",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.1.5"
+    },
+    {
+      "scope": "legacy_gantt_chart",
+      "package": "shelf_web_socket",
+      "constraint": "^3.0.0",
+      "resolved": "3.0.0",
+      "source": "hosted",
+      "dev": false,
+      "latest": "3.0.0"
+    },
+    {
+      "scope": "legacy_gantt_chart",
+      "package": "web_socket_channel",
+      "constraint": "^3.0.3",
+      "resolved": "3.0.3",
+      "source": "hosted",
+      "dev": false,
+      "latest": "3.0.3"
+    },
+    {
+      "scope": "legacy_gantt_chart",
+      "package": "http",
+      "constraint": "^1.6.0",
+      "resolved": "1.6.0",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.6.0"
+    },
+    {
+      "scope": "legacy_gantt_chart",
+      "package": "synchronized",
+      "constraint": "^3.6.1+1",
+      "resolved": "3.6.1+1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "3.6.1+1"
+    },
+    {
+      "scope": "legacy_gantt_chart",
+      "package": "sqflite_common_ffi",
+      "constraint": "^2.4.7",
+      "resolved": "2.4.7",
+      "source": "hosted",
+      "dev": false,
+      "latest": "2.4.7"
+    },
+    {
+      "scope": "legacy_gantt_chart",
+      "package": "collection",
+      "constraint": "^1.19.1",
+      "resolved": "1.19.1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.19.1"
+    },
+    {
+      "scope": "legacy_gantt_chart",
+      "package": "crypto",
+      "constraint": "^3.0.8",
+      "resolved": "3.0.8",
+      "source": "hosted",
+      "dev": false,
+      "latest": "3.0.8"
+    },
+    {
+      "scope": "legacy_gantt_chart",
+      "package": "fixnum",
+      "constraint": "^1.1.1",
+      "resolved": "1.1.1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.1.1"
+    },
+    {
+      "scope": "legacy_gantt_chart",
+      "package": "flutter_lints",
+      "constraint": "^6.0.0",
+      "resolved": "6.0.0",
+      "source": "hosted",
+      "dev": true,
+      "latest": "6.0.0"
+    },
+    {
+      "scope": "legacy_gantt_chart",
+      "package": "stream_channel",
+      "constraint": "^2.1.4",
+      "resolved": "2.1.4",
+      "source": "hosted",
+      "dev": true,
+      "latest": "2.1.4"
+    },
+    {
+      "scope": "legacy_gantt_chart",
+      "package": "async",
+      "constraint": "^2.13.1",
+      "resolved": "2.13.1",
+      "source": "hosted",
+      "dev": true,
+      "latest": "2.13.1"
+    },
+    {
+      "scope": "legacy_gantt_chart",
+      "package": "mocktail",
+      "constraint": "^1.0.5",
+      "resolved": "1.0.5",
+      "source": "hosted",
+      "dev": true,
+      "latest": "1.0.5"
+    },
+    {
+      "scope": "legacy_gantt_chart",
+      "package": "path_provider",
+      "constraint": "^2.1.6",
+      "resolved": "2.1.6",
+      "source": "hosted",
+      "dev": true,
+      "latest": "2.1.6"
+    },
+    {
+      "scope": "legacy_gantt_plugin/webview_ui",
+      "package": "material_ui",
+      "constraint": "^1.11.1",
+      "resolved": "1.11.1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.11.1"
+    },
+    {
+      "scope": "legacy_gantt_plugin/webview_ui",
+      "package": "web",
+      "constraint": "^1.1.2",
+      "resolved": "1.1.2",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.1.2"
+    },
+    {
+      "scope": "legacy_gantt_plugin/webview_ui",
+      "package": "cupertino_icons",
+      "constraint": "^2.0.0",
+      "resolved": "2.0.0",
+      "source": "hosted",
+      "dev": false,
+      "latest": "2.0.0"
+    },
+    {
+      "scope": "legacy_gantt_plugin/webview_ui",
+      "package": "flutter_lints",
+      "constraint": "^6.0.0",
+      "resolved": "6.0.0",
+      "source": "hosted",
+      "dev": true,
+      "latest": "6.0.0"
+    },
+    {
+      "scope": "legacy_gantt_protocol",
+      "package": "collection",
+      "constraint": "^1.19.1",
+      "resolved": "1.19.1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.19.1"
+    },
+    {
+      "scope": "legacy_gantt_protocol",
+      "package": "crypto",
+      "constraint": "^3.0.8",
+      "resolved": "3.0.8",
+      "source": "hosted",
+      "dev": false,
+      "latest": "3.0.8"
+    },
+    {
+      "scope": "legacy_gantt_protocol",
+      "package": "uuid",
+      "constraint": "^4.6.0",
+      "resolved": "4.6.0",
+      "source": "hosted",
+      "dev": false,
+      "latest": "4.6.0"
+    },
+    {
+      "scope": "legacy_gantt_protocol",
+      "package": "meta",
+      "constraint": "^1.19.0",
+      "resolved": "1.19.0",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.19.0"
+    },
+    {
+      "scope": "legacy_gantt_protocol",
+      "package": "protobuf",
+      "constraint": "^6.1.0",
+      "resolved": "6.1.0",
+      "source": "hosted",
+      "dev": false,
+      "latest": "6.1.0"
+    },
+    {
+      "scope": "legacy_gantt_protocol",
+      "package": "fixnum",
+      "constraint": "^1.1.1",
+      "resolved": "1.1.1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.1.1"
+    },
+    {
+      "scope": "legacy_gantt_protocol",
+      "package": "lints",
+      "constraint": "^6.1.0",
+      "resolved": "6.1.0",
+      "source": "hosted",
+      "dev": true,
+      "latest": "6.1.0"
+    },
+    {
+      "scope": "legacy_gantt_protocol",
+      "package": "test",
+      "constraint": "^1.33.0",
+      "resolved": "1.33.0",
+      "source": "hosted",
+      "dev": true,
+      "latest": "1.33.0"
+    },
+    {
+      "scope": "legacy_pert_chart/example",
+      "package": "material_ui",
+      "constraint": "^1.11.1",
+      "resolved": "1.11.1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.11.1"
+    },
+    {
+      "scope": "legacy_pert_chart/example",
+      "package": "cupertino_icons",
+      "constraint": "^2.0.0",
+      "resolved": "2.0.0",
+      "source": "hosted",
+      "dev": false,
+      "latest": "2.0.0"
+    },
+    {
+      "scope": "legacy_pert_chart/example",
+      "package": "provider",
+      "constraint": "^6.1.5+1",
+      "resolved": "6.1.5+1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "6.1.5+1"
+    },
+    {
+      "scope": "legacy_pert_chart/example",
+      "package": "legacy_gantt_chart",
+      "constraint": "^11.0.0",
+      "resolved": "11.0.1",
+      "source": "path",
+      "dev": false,
+      "latest": "11.0.0"
+    },
+    {
+      "scope": "legacy_pert_chart/example",
+      "package": "legacy_timeline_scrubber",
+      "constraint": "^4.0.0",
+      "resolved": "4.0.0",
+      "source": "path",
+      "dev": false,
+      "latest": "4.0.0"
+    },
+    {
+      "scope": "legacy_pert_chart/example",
+      "package": "legacy_gantt_protocol",
+      "constraint": "^4.0.0",
+      "resolved": "4.0.1",
+      "source": "path",
+      "dev": false,
+      "latest": "4.0.0"
+    },
+    {
+      "scope": "legacy_pert_chart/example",
+      "package": "flutter_lints",
+      "constraint": "^6.0.0",
+      "resolved": "6.0.0",
+      "source": "hosted",
+      "dev": true,
+      "latest": "6.0.0"
+    },
+    {
+      "scope": "legacy_pert_chart",
+      "package": "material_ui",
+      "constraint": "^1.11.1",
+      "resolved": "1.11.1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.11.1"
+    },
+    {
+      "scope": "legacy_pert_chart",
+      "package": "legacy_gantt_chart",
+      "constraint": "^11.0.0",
+      "resolved": "11.0.1",
+      "source": "path",
+      "dev": false,
+      "latest": "11.0.0"
+    },
+    {
+      "scope": "legacy_pert_chart",
+      "package": "legacy_gantt_protocol",
+      "constraint": "^4.0.0",
+      "resolved": "4.0.1",
+      "source": "path",
+      "dev": false,
+      "latest": "4.0.0"
+    },
+    {
+      "scope": "legacy_pert_chart",
+      "package": "flutter_lints",
+      "constraint": "^6.0.0",
+      "resolved": "6.0.0",
+      "source": "hosted",
+      "dev": true,
+      "latest": "6.0.0"
+    },
+    {
+      "scope": "legacy_timeline_scrubber/example",
+      "package": "material_ui",
+      "constraint": "^1.11.1",
+      "resolved": "1.11.1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.11.1"
+    },
+    {
+      "scope": "legacy_timeline_scrubber/example",
+      "package": "provider",
+      "constraint": "^6.1.5+1",
+      "resolved": "6.1.5+1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "6.1.5+1"
+    },
+    {
+      "scope": "legacy_timeline_scrubber/example",
+      "package": "flutter_lints",
+      "constraint": "^6.0.0",
+      "resolved": "6.0.0",
+      "source": "hosted",
+      "dev": true,
+      "latest": "6.0.0"
+    },
+    {
+      "scope": "legacy_timeline_scrubber",
+      "package": "material_ui",
+      "constraint": "^1.11.1",
+      "resolved": "1.11.1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.11.1"
+    },
+    {
+      "scope": "legacy_timeline_scrubber",
+      "package": "mocktail",
+      "constraint": "^1.0.5",
+      "resolved": "1.0.5",
+      "source": "hosted",
+      "dev": true,
+      "latest": "1.0.5"
+    },
+    {
+      "scope": "legacy_timeline_scrubber",
+      "package": "flutter_lints",
+      "constraint": "^6.0.0",
+      "resolved": "6.0.0",
+      "source": "hosted",
+      "dev": true,
+      "latest": "6.0.0"
+    },
+    {
+      "scope": "legacy_tree_grid/example",
+      "package": "material_ui",
+      "constraint": "^1.11.1",
+      "resolved": "1.11.1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.11.1"
+    },
+    {
+      "scope": "legacy_tree_grid/example",
+      "package": "legacy_context_menu",
+      "constraint": "^3.0.0",
+      "resolved": "3.0.0",
+      "source": "path",
+      "dev": false,
+      "latest": "3.0.0"
+    },
+    {
+      "scope": "legacy_tree_grid/example",
+      "package": "shared_preferences",
+      "constraint": "^2.5.6",
+      "resolved": "2.5.6",
+      "source": "hosted",
+      "dev": false,
+      "latest": "2.5.6"
+    },
+    {
+      "scope": "legacy_tree_grid/example",
+      "package": "flutter_lints",
+      "constraint": "^6.0.0",
+      "resolved": "6.0.0",
+      "source": "hosted",
+      "dev": true,
+      "latest": "6.0.0"
+    },
+    {
+      "scope": "legacy_tree_grid",
+      "package": "material_ui",
+      "constraint": "^1.11.1",
+      "resolved": "1.11.1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "1.11.1"
+    },
+    {
+      "scope": "legacy_tree_grid",
+      "package": "legacy_context_menu",
+      "constraint": "^3.0.0",
+      "resolved": "3.0.0",
+      "source": "hosted",
+      "dev": false,
+      "latest": "3.0.0"
+    },
+    {
+      "scope": "legacy_tree_grid",
+      "package": "provider",
+      "constraint": "^6.1.5+1",
+      "resolved": "6.1.5+1",
+      "source": "hosted",
+      "dev": false,
+      "latest": "6.1.5+1"
+    },
+    {
+      "scope": "legacy_tree_grid",
+      "package": "flutter_lints",
+      "constraint": "^6.0.0",
+      "resolved": "6.0.0",
+      "source": "hosted",
+      "dev": true,
+      "latest": "6.0.0"
+    }
+  ],
+  "npm": [
+    {
+      "package": "crypto-js",
+      "constraint": "^4.2.0",
+      "resolved": "4.2.0",
+      "latest": "4.2.0"
+    },
+    {
+      "package": "ws",
+      "constraint": "^8.23.0",
+      "resolved": "8.23.0",
+      "latest": "8.23.0"
+    },
+    {
+      "package": "@eslint/js",
+      "constraint": "^10.0.1",
+      "resolved": "10.0.1",
+      "latest": "10.0.1"
+    },
+    {
+      "package": "@types/crypto-js",
+      "constraint": "^4.2.2",
+      "resolved": "4.2.2",
+      "latest": "4.2.2"
+    },
+    {
+      "package": "@types/node",
+      "constraint": "^26.6.6",
+      "resolved": "26.6.6",
+      "latest": "26.6.6"
+    },
+    {
+      "package": "@types/vscode",
+      "constraint": "^1.146.0",
+      "resolved": "1.146.0",
+      "latest": "1.146.0"
+    },
+    {
+      "package": "@types/ws",
+      "constraint": "^8.18.2",
+      "resolved": "8.18.2",
+      "latest": "8.18.2"
+    },
+    {
+      "package": "eslint",
+      "constraint": "^10.15.0",
+      "resolved": "10.15.0",
+      "latest": "10.15.0"
+    },
+    {
+      "package": "globals",
+      "constraint": "^17.14.0",
+      "resolved": "17.14.0",
+      "latest": "17.14.0"
+    },
+    {
+      "package": "typescript",
+      "constraint": "^6.0.3",
+      "resolved": "6.0.3",
+      "latest": "7.0.2"
+    },
+    {
+      "package": "typescript-eslint",
+      "constraint": "^8.73.0",
+      "resolved": "8.73.0",
+      "latest": "8.73.0"
+    }
+  ]
+}

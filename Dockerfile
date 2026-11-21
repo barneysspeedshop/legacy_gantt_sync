@@ -1,14 +1,18 @@
 # Stage 1: Build Rust Solver
-FROM rust:1.99.1@sha256:8a4e90c7946b74626488b1446f712c0fe0ed1a596cbd3d871684bc9c5433ae07 AS rust-builder
+FROM rust:1.100.0@sha256:223cc32ddca8f3ee90c436dbc94b6b5f052ea7f9653c5201e9612f08ad7d21b8 AS rust-builder
+COPY scripts/install_proto_toolchain.sh /tmp/install_proto_toolchain.sh
+RUN apt-get update && apt-get install -y ca-certificates curl unzip \
+    && SKIP_DART_PLUGIN=1 PROTO_TOOLCHAIN_DIR=/opt/gantt-proto bash /tmp/install_proto_toolchain.sh \
+    && rm -rf /var/lib/apt/lists/*
+ENV PROTOC=/opt/gantt-proto/protoc/bin/protoc
 WORKDIR /app
 COPY gantt_solver_rs ./gantt_solver_rs
 COPY legacy_gantt_protocol ./legacy_gantt_protocol
 WORKDIR /app/gantt_solver_rs
-RUN apt-get update && apt-get install -y protobuf-compiler
 RUN cargo build --release --locked --jobs 1
 
 # Stage 2: Build Dart Server (Forces Sequential Execution)
-FROM dart:3.14.0@sha256:c78970229c8944bd6076caf4e5977ef569ba66750d301a2149f63b41a6725cec AS dart-builder
+FROM dart:3.14.1@sha256:36176bf7b6400bdc4aa77ba07b733b2eabf22640f71afd1b83eba679a26d5698 AS dart-builder
 
 # We copy a file from the previous stage here. This forces Docker to 
 # wait for the Rust build to finish completely before starting the Dart build,

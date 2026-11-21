@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run plugin dependency checks in a Linux namespace with no host home or credentials.
 
-Requires bubblewrap and Node24. Only tracked plugin files and public system/Node
+Requires bubblewrap and Node26.13.1 LTS. Only tracked plugin files and public system/Node
 tools enter the sandbox. Network is available for npm's registry checks, then
 disabled before dependency code runs. The host home, environment, Docker socket,
 Git metadata, and operator files are absent.
@@ -20,7 +20,7 @@ def main():
     bwrap = shutil.which('bwrap')
     node = shutil.which('node')
     if not bwrap or not node:
-        raise SystemExit('Install bubblewrap and Node24; no unsandboxed fallback is provided')
+        raise SystemExit('Install bubblewrap and Node26.13.1 LTS; no unsandboxed fallback is provided')
     binary = Path(node).resolve()
     prefix = binary.parent.parent
     npm = prefix / 'lib/node_modules/npm'

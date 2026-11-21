@@ -4,7 +4,7 @@ environment:
   sdk: ^3.13.0
   flutter: ">=3.47.0"
 dependencies:
-  async: ^2.13.0
+  async: ^2.13.1
   example:
     path: ../../legacy_gantt_chart/example
   http: ^1.6.0
@@ -12,11 +12,11 @@ dependencies:
     path: ../../legacy_gantt_protocol
   legacy_gantt_chart:
     path: ../../legacy_gantt_chart
-  sqlite_crdt: ^3.0.0
-  sqflite_common_ffi: ^2.4.0
+  sqlite_crdt: ^3.0.4
+  sqflite_common_ffi: ^2.4.7
   web_socket_channel: ^3.0.3
 dev_dependencies:
-  lints: ^6.0.0
+  lints: ^6.1.0
   flutter_test:
     sdk: flutter
 dependency_overrides:

@@ -65,7 +65,7 @@ For plugin work, use the isolated Linux checker:
 python3 scripts/check_plugin_isolated.py
 ```
 
-It requires bubblewrap and Node 24. It copies tracked source into a disposable filesystem with no host home, Git metadata, operator files, credentials, or Docker socket. npm installation and registry verification run with hooks disabled; dependency code then runs without networking. There is no unsafe fallback if sandboxing is unavailable.
+It requires bubblewrap and Node 26.13.1 LTS. It copies tracked source into a disposable filesystem with no host home, Git metadata, operator files, credentials, or Docker socket. npm installation and registry verification run with hooks disabled; dependency code then runs without networking. There is no unsafe fallback if sandboxing is unavailable.
 
 Rust build scripts, Dart build hooks, compiler plugins, and explicitly invoked JavaScript can all execute code. Run full ecosystem checks in disposable CI or a separate build account without publishing/cloud credentials. Keep package-publishing authentication out of the development/build profile. Use phishing-resistant MFA for maintainer and publisher accounts, keep recovery methods protected, and revoke obsolete tokens through the provider. Repository changes cannot verify those account controls or revoke copied credentials.
 

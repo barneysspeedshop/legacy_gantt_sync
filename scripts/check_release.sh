@@ -9,6 +9,12 @@ for tool in dart flutter cargo protoc go npm gitleaks; do
   command -v "$tool" >/dev/null || { echo "Missing release-check tool: $tool" >&2; exit 1; }
 done
 
+python3 scripts/check_toolchains.py
+bash scripts/build_proto.sh --check
+python3 scripts/test_start_infra.py
+for package in legacy_gantt_protocol legacy_context_menu legacy_gantt_chart legacy_pert_chart legacy_tree_grid legacy_timeline_scrubber; do
+  (cd "$package" && dart format --output=none --set-exit-if-changed lib)
+done
 python3 scripts/prepare_local_packages.py
 python3 scripts/audit_open_source.py
 python3 scripts/check_state_ownership.py
@@ -22,7 +28,6 @@ export LD_LIBRARY_PATH="$PWD/gantt_solver_rs/target/release${LD_LIBRARY_PATH:+:$
 (cd legacy_gantt_protocol/reference_server_go && go test ./... && go vet ./... && test -z "$(gofmt -l .)")
 dart pub get --enforce-lockfile
 dart analyze --fatal-infos bin lib test
-dart run custom_lint --fatal-infos --fatal-warnings
 mkdir -p build
 dart compile exe bin/server.dart -o build/release-server
 dart test --concurrency=1

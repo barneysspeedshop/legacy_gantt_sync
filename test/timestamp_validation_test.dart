@@ -195,7 +195,7 @@ void main() {
     // Send FUTURE HLC op
     final futureTime = DateTime.now().millisecondsSinceEpoch + 70000;
     final futureHlc =
-        '${DateTime.fromMillisecondsSinceEpoch(futureTime).toIso8601String()}-0000-node1';
+        '${DateTime.fromMillisecondsSinceEpoch(futureTime, isUtc: true).toIso8601String()}-0000-node1';
 
     socket.add(
       encodeMessage({
@@ -262,7 +262,7 @@ void main() {
     }
 
     // Construct valid HLC
-    final hlcParam = '${DateTime.now().toIso8601String()}-0000-nodeTest';
+    final hlcParam = Hlc.fromDate(DateTime.now(), 'nodeTest').toString();
 
     socket.add(
       encodeMessage({
@@ -290,7 +290,7 @@ void main() {
         if (json['type'] == 'INSERT_TASK' &&
             json['data']['id'] == 'test-valid') {
           echoReceived = true;
-          expect(json['timestamp'], Hlc.parse(hlcParam).toString());
+          expect(json['timestamp'], hlcParam);
           expect(json['data']['lastUpdated'], json['timestamp']);
           break;
         }

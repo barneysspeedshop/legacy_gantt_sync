@@ -13,6 +13,7 @@ server.log
 coverage/
 test/
 doc/
+docs/
 config/
 legacy_gantt_chart/
 legacy_tree_grid/
