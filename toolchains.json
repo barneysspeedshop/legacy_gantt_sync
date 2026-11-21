@@ -1,0 +1,18 @@
+{
+  "snapshot_date": "2026-11-21",
+  "flutter": "3.50.1",
+  "flutter_dart": "3.14.0",
+  "dart": "3.14.1",
+  "node": "26.13.1",
+  "rust": "1.100.0",
+  "go": "1.27.4",
+  "python": "3.15.2",
+  "protoc": "36.2",
+  "protoc_plugin": "25.1.0",
+  "android_gradle_plugin": "9.5.2",
+  "gradle": "9.9.2",
+  "kotlin": "2.4.21",
+  "java": "27.0.1.1+4",
+  "zola": "0.23.6",
+  "emailjs_browser": "5.0.3"
+}

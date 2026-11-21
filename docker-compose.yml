@@ -2,13 +2,13 @@
 # it is not used by the application. See docker-swarm.yml for production
 services:
   db:
-    image: postgres:15
+    image: postgres:18.7@sha256:eb63372c1e05c755f55fa30cbd07aecc443676fc6c0fa90b9002d01537841e1a
     environment:
       POSTGRES_USER: dart_user
       POSTGRES_PASSWORD: ${DB_PASS:?Set DB_PASS}
       POSTGRES_DB: legacy_gantt
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U dart_user -d legacy_gantt"]
       interval: 5s
@@ -18,7 +18,7 @@ services:
       - "127.0.0.1:5432:5432"
 
   redis:
-    image: redis:7
+    image: redis:8.10.3@sha256:1f88291b4c57bdf249f02eb085a8669889b2d2954e91d4de5118a5da6b78dd53
     ports:
       - "127.0.0.1:6379:6379"
     volumes:
@@ -55,7 +55,7 @@ services:
         condition: service_healthy
 
   nginx:
-    image: nginx:latest
+    image: nginx:1.30.7@sha256:7fad6c0dff97965adbddf28027d934b111fc0221a554315dc274712f3fba24d3
     ports:
       - "80:80"
       - "443:443"

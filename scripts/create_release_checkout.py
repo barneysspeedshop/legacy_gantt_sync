@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Clone the current publishable source, including dirty submodules, into a sandbox.
+"""Clone tracked publishable source, including dirty submodules, into a sandbox.
 
 Temporary candidate commits are created only in the output directory. The source
-checkout, its index, branches, and history are never changed. Ignored operator
-files and build caches are excluded; tracked files remain included.
+checkout, its index, branches, and history are never changed. Only files tracked
+in each source index are copied; add new source files before running this check.
+Working-tree content for tracked files remains included.
 """
 import argparse
 from pathlib import Path
@@ -46,7 +47,7 @@ def main():
     for repo in reversed(repos):
         candidate = exports[repo]
         candidate.mkdir(parents=True)
-        names = git(repo, 'ls-files', '--cached', '--others', '--exclude-standard', '-z')
+        names = git(repo, 'ls-files', '--cached', '-z')
         for raw in set(names.split(b'\0')):
             if not raw:
                 continue

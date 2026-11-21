@@ -50,7 +50,7 @@ All first-party components use MIT. Keep authentication, tenant isolation, revoc
 
 ## Repeatable release gate (Linux)
 
-Install Flutter/Dart, Rust/Cargo, Go, Node.js/npm, `protoc`, and Gitleaks 8.30.1. CI targets Flutter 3.50.0 to match the SDK that reports the old Material imports as deprecated. Local migration checks use Flutter 3.47.2 / Dart 3.13.2 for the new baseline. Rust remains pinned to 1.93.0. Exact minimum-patch matrix testing is not included. The root workflow `.github/workflows/release-check.yml` provisions disposable PostgreSQL 15 and Redis 7 services and runs:
+Install the stable toolchains recorded in [`toolchains.json`](../../toolchains.json), plus `protoc` and Gitleaks 8.30.1. CI and local migration checks use Flutter 3.50.1 (bundled Dart 3.14.0), standalone Dart 3.14.1 for the server and protocol, Rust 1.100.0, Go 1.27.4, and Node.js 26.13.1 LTS. Exact minimum-patch matrix testing is not included. The root workflow `.github/workflows/release-check.yml` provisions disposable PostgreSQL 18 and Redis 8 services and runs:
 
 ```bash
 TEST_DB_PORT=<disposable-postgres-port> \
@@ -75,7 +75,7 @@ cd /tmp/gantt-release-candidate/checkout
 # Run the release gate with disposable services as above.
 ```
 
-This copies tracked and nonignored source into temporary candidate repositories, creates local snapshot commits for each submodule and the root, and clones those exact commits with initialized submodules. It excludes ignored credentials and build caches. It does not commit or alter the working repository. This proves the current candidate is reproducible from Git objects; it does not prove that unpublished commits are accessible from public origins.
+This copies tracked working-tree source into temporary candidate repositories, creates local snapshot commits for each submodule and the root, and clones those exact commits with initialized submodules. All untracked files are excluded, including nonignored operator files; add intended new source to Git first. Tracked files remain included even if an ignore rule matches them. It does not commit or alter the working repository. This proves the current candidate is reproducible from Git objects; it does not prove that unpublished commits are accessible from public origins.
 
 For publication, review and commit each changed submodule, push those commits, then commit the root with the resulting gitlinks. Verify an origin clone with `git clone --recurse-submodules <root-url>`, run the gate, and confirm all referenced repositories and commits are accessible to unauthenticated contributors. Publish package versions in dependency order and tag the reviewed commits. No publishing or visibility change is performed by the gate.
 

@@ -14,12 +14,37 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: '27.0.1.1+4'
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: '3.50.1'
+          cache: true
+      - name: Install Flutter's required Android NDK
+        run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;28.2.13676358"'
+      - name: Build both Android examples
+        run: |
+          python3 scripts/prepare_local_packages.py
+          for example in legacy_gantt_chart/example legacy_pert_chart/example; do
+            (cd "$example" && flutter pub get && flutter build apk --debug)
+          done
   image:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     services:
       postgres:
-        image: postgres:15
+        image: postgres:18.7@sha256:eb63372c1e05c755f55fa30cbd07aecc443676fc6c0fa90b9002d01537841e1a
         env:
           POSTGRES_USER: dart_user
           POSTGRES_PASSWORD: release-test-only
@@ -30,7 +55,7 @@ jobs:
           --health-cmd "pg_isready -U dart_user -d legacy_gantt"
           --health-interval 5s --health-timeout 5s --health-retries 10
       redis:
-        image: redis:7
+        image: redis:8.10.3@sha256:1f88291b4c57bdf249f02eb085a8669889b2d2954e91d4de5118a5da6b78dd53
         ports:
           - 6379:6379
     steps:
@@ -91,6 +116,9 @@ jobs:
         with:
           submodules: recursive
           persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: 3.15.2
       - name: Install pinned workflow parser
         run: |
           python3 -m venv "$RUNNER_TEMP/security-venv"
@@ -104,7 +132,7 @@ jobs:
     timeout-minutes: 45
     services:
       postgres:
-        image: postgres:15
+        image: postgres:18.7@sha256:eb63372c1e05c755f55fa30cbd07aecc443676fc6c0fa90b9002d01537841e1a
         env:
           POSTGRES_USER: dart_user
           POSTGRES_PASSWORD: release-test-only
@@ -115,7 +143,7 @@ jobs:
           --health-cmd "pg_isready -U dart_user -d legacy_gantt"
           --health-interval 5s --health-timeout 5s --health-retries 10
       redis:
-        image: redis:7
+        image: redis:8.10.3@sha256:1f88291b4c57bdf249f02eb085a8669889b2d2954e91d4de5118a5da6b78dd53
         ports:
           - 6379:6379
     env:
@@ -127,25 +155,37 @@ jobs:
         with:
           submodules: recursive
           persist-credentials: false
-      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           channel: stable
-          flutter-version: '3.50.0'
+          flutter-version: '3.50.1'
           cache: true
-      - uses: dtolnay/rust-toolchain@2b28c52cef68d77e9a4de0b428559db37728c04f # 1.93.0
+      - uses: dart-lang/setup-dart@2286a0c042b44434fe26d292bbce8d34f7ec662b # v1.8.2
         with:
+          sdk: 3.14.1
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
+        with:
+          toolchain: 1.100.0
           components: rustfmt, clippy
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
-          go-version: stable
+          go-version: 1.27.4
           cache-dependency-path: legacy_gantt_protocol/reference_server_go/go.sum
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '24'
+          node-version: '26.13.1'
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: 3.15.2
       - name: Install check tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y protobuf-compiler libsqlite3-dev
+          sudo apt-get install -y curl unzip libsqlite3-dev
+          PROTO_TOOLCHAIN_DIR="$RUNNER_TEMP/gantt-proto-toolchain" \
+            PUB_CACHE="$RUNNER_TEMP/gantt-proto-pub-cache" \
+            bash scripts/install_proto_toolchain.sh
+          echo "$RUNNER_TEMP/gantt-proto-toolchain/protoc/bin" >> "$GITHUB_PATH"
+          echo "PROTOC_GEN_DART=$RUNNER_TEMP/gantt-proto-pub-cache/bin/protoc-gen-dart" >> "$GITHUB_ENV"
           go install github.com/zricethezav/gitleaks/v8@v8.30.1
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
       - name: Build and verify the ecosystem

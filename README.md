@@ -45,6 +45,9 @@ The next synchronization release requires protocol 4.0.0, chart 11.0.0, and a co
 ## Getting Started
 
 ### Prerequisites
+
+Development and CI use the stable versions in [`toolchains.json`](toolchains.json). Run `python3 scripts/check_toolchains.py` to verify the installed release toolchains. Package minimum SDK requirements remain in their `pubspec.yaml` files.
+
 - [Flutter SDK](https://flutter.dev/docs/get-started/install)
 - [Dart SDK](https://dart.dev/get-dart)
 - [Docker](https://www.docker.com/) (optional, for running the full stack)
@@ -71,6 +74,8 @@ dart run bin/server.dart
 
 #### Using Docker Swarm
 This infrastructure is designed to be deployed using **Docker Swarm** for production-grade reliability.
+
+Existing PostgreSQL 15 deployments must follow the [PostgreSQL 18 migration steps](docs/postgresql-18-migration.md) before using the updated Compose or Swarm definitions. Keep the original database volume intact.
 
 1. **Initialize Swarm** (if not already done):
    ```bash

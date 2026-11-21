@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   db:
-    image: postgres:15
+    image: postgres:18.7@sha256:eb63372c1e05c755f55fa30cbd07aecc443676fc6c0fa90b9002d01537841e1a
     environment:
       POSTGRES_USER: dart_user
       POSTGRES_DB: legacy_gantt
@@ -10,7 +10,7 @@ services:
     secrets:
       - db_password
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql
     deploy:
       placement:
         constraints:
@@ -19,7 +19,7 @@ services:
         condition: on-failure
 
   redis:
-    image: redis:7
+    image: redis:8.10.3@sha256:1f88291b4c57bdf249f02eb085a8669889b2d2954e91d4de5118a5da6b78dd53
     # SECURITY: Ports are removed so only internal services can reach it
     command: redis-server --requirepass ${REDIS_PASSWORD:?Set REDIS_PASSWORD}
     volumes:
@@ -58,7 +58,7 @@ services:
       - jwt_secret
 
   nginx:
-    image: nginx:latest
+    image: nginx:1.30.7@sha256:7fad6c0dff97965adbddf28027d934b111fc0221a554315dc274712f3fba24d3
     ports:
       - "80:80"
       - "443:443"

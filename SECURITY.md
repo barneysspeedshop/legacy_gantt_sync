@@ -29,7 +29,7 @@ python3 scripts/audit_open_source.py
 python3 scripts/audit_open_source.py --history
 ```
 
-The script discovers initialized submodules from Git's index, scans tracked and non-ignored untracked files, and optionally scans every local ref. It prints only file locations, rule identifiers, and commit IDs. It exits nonzero for findings or scanner failures. After the intentional history rewrite, the public server refs should scan clean; local recovery backups still contain the former key and must remain private.
+The script discovers initialized submodules from Git's index, scans tracked working-tree files, and optionally scans every local ref. Untracked files are excluded, even when they are not ignored; add intended source files to Git before auditing. Tracked files remain included even if an ignore rule matches them. It prints only file locations, rule identifiers, and commit IDs. It exits nonzero for findings or scanner failures. After the intentional history rewrite, the public server refs should scan clean; local recovery backups still contain the former key and must remain private.
 
 ## Repository contribution controls
 
@@ -65,7 +65,7 @@ For plugin work, use the isolated Linux checker:
 python3 scripts/check_plugin_isolated.py
 ```
 
-It requires bubblewrap and Node 24. It copies tracked source into a disposable filesystem with no host home, Git metadata, operator files, credentials, or Docker socket. npm installation and registry verification run with hooks disabled; dependency code then runs without networking. There is no unsafe fallback if sandboxing is unavailable.
+It requires bubblewrap and Node 26.13.1 LTS. It copies tracked source into a disposable filesystem with no host home, Git metadata, operator files, credentials, or Docker socket. npm installation and registry verification run with hooks disabled; dependency code then runs without networking. There is no unsafe fallback if sandboxing is unavailable.
 
 Rust build scripts, Dart build hooks, compiler plugins, and explicitly invoked JavaScript can all execute code. Run full ecosystem checks in disposable CI or a separate build account without publishing/cloud credentials. Keep package-publishing authentication out of the development/build profile. Use phishing-resistant MFA for maintainer and publisher accounts, keep recovery methods protected, and revoke obsolete tokens through the provider. Repository changes cannot verify those account controls or revoke copied credentials.
 
