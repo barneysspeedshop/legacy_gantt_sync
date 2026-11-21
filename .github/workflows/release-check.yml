@@ -32,7 +32,7 @@ jobs:
           flutter-version: '3.50.1'
           cache: true
       - name: Install Flutter's required Android NDK
-        run: sdkmanager 'ndk;28.2.13676358'
+        run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;28.2.13676358"'
       - name: Build both Android examples
         run: |
           python3 scripts/prepare_local_packages.py
